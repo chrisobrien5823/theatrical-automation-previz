@@ -19,6 +19,27 @@ npm run build:single   # dist-single/ one self-contained index.html for USB / fi
 - Camera presets: FOH, SL, SR, Top. Speed 1×/2×/4×.
 - **Load show…** (or drag a `.json` onto the stage) to run your own show file.
 
+## Importing a set model (Rig mode, laptop)
+1. **Open…** (or drag onto the stage) a `.glb`, or a `.gltf` together with its `.bin` and textures.
+   The import dialog guesses the units, lets you switch Y-up / Z-up (CAD exports are often Z-up),
+   and shows the model's overall size so you can check it against a known dimension.
+2. **Model tab:** click an object in 3D or in the list → **Make piece** (or *box per part* for
+   L-shapes and units with gaps). Pieces are collision-checked; leave walls, pipes and masking static.
+3. **Moves with → ＋ New Lift / Fly / Wagon / Revolve** creates an axis centered on the piece and
+   attaches it. Choosing ＋ New on a piece that already moves stacks the new axis on the old one
+   (e.g. a revolve riding a wagon). For a revolve, make the *disc* a piece first so the pivot is its center,
+   then attach the scenery to that revolve.
+4. **Axes tab:** drag a slider to jog; clashing pieces turn red with the live gap shown on top.
+   *Setup* holds limits, speed/accel, travel direction, pivot/origin and "Drawn at" (the position
+   the model shows the axis in).
+5. **Cues tab:** **● Record cue** saves the jogged positions (only axes that moved). Edit targets,
+   delays and order; preflight ⚠ badges update as you go.
+6. **Save** downloads a `.previz` file (show + model in one file). Work is also autosaved in the
+   browser. Open a `.previz` on a phone to run it (Rig mode is laptop-only).
+
+`samples/test-set.glb` is a generated CAD-style test model (millimeters, Z-up, layer groups):
+`node scripts/make-test-model.mjs` rebuilds it. Real set models in `samples/` are git-ignored.
+
 ## Demo script (≈30 s)
 1. Q1 preset, Q2 riser up. The cue list already shows **⚠ 0.064 m** on Q3: that's the preflight sweep.
 2. Q3: the revolve turns 90° and Wall A's corner sweeps past the riser. Both go red, and the log records
@@ -44,6 +65,8 @@ vertex-to-edge otherwise). Live playback and the preflight sweep both check ever
 report identical windows.
 
 ## Layout
-- `src/core/`: pure JS, no Three.js (profiles, rig kinematics, simulator, clearance, preflight, show loader).
-- `src/render/`: Three.js scene and piece meshes.
-- `src/ui/`: cue list, axis readouts, conflict log.
+- `src/core/`: pure JS, no Three.js (profiles, rig kinematics, simulator, clearance, preflight,
+  show loader, box fitting, rig edit operations).
+- `src/model/`: glTF import, the displayed model copy, `.previz` save/load and autosave.
+- `src/render/`: Three.js scene, piece meshes, click-to-select.
+- `src/ui/`: cue list, axis readouts, conflict log; `src/ui/editor/` is Rig mode.

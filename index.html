@@ -21,6 +21,12 @@
       </main>
 
       <aside id="panel">
+        <div class="mode-switch desktop-only" role="tablist" aria-label="Mode">
+          <button data-mode="run" aria-selected="true">Run</button>
+          <button data-mode="rig" aria-selected="false">Rig</button>
+        </div>
+
+        <div id="runPanel" class="panel-body">
         <div class="standby">
           <span class="label">Standby</span>
           <span id="standby" class="standby-cue">—</span>
@@ -42,6 +48,9 @@
         <section class="tab" id="tab-log" hidden>
           <ul id="log" class="log"></ul>
         </section>
+        </div>
+
+        <div id="rigPanel" class="panel-body" hidden></div>
 
         <footer class="panel-foot">
           <label class="speed">Speed
@@ -51,7 +60,9 @@
               <option value="4">4×</option>
             </select>
           </label>
-          <label class="file-btn">Load show…<input id="fileInput" type="file" accept=".json,application/json" hidden /></label>
+          <label class="file-btn">Open…<input id="fileInput" type="file" accept=".json,.previz,.glb,.gltf,.bin,application/json" multiple hidden /></label>
+          <button id="saveProject" class="file-btn desktop-only" type="button">Save</button>
+          <button id="loadDemo" class="file-btn" type="button">Demo</button>
           <span class="keys">Space GO · Esc STOP · R RESET</span>
         </footer>
       </aside>

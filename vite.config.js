@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: single ? 'dist-single' : 'dist',
-      chunkSizeWarningLimit: 700, // Three.js alone is ~500 kB; one chunk is fine for this app
+      chunkSizeWarningLimit: 1000, // Three.js + glTF loader/exporter ~720 kB; one chunk is fine for this app
 
       // The single-file build inlines show.json via import, so public/ is not needed there.
       copyPublicDir: !single,

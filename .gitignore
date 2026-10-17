@@ -3,3 +3,6 @@ dist/
 dist-single/
 *.log
 .claude/settings.local.json
+# Real set models stay local; only the generated test model is committed.
+samples/*
+!samples/test-set.glb

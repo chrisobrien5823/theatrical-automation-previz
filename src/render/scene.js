@@ -67,6 +67,23 @@ export function createScene(container) {
     camTween = { from: { pos: camera.position.clone(), target: controls.target.clone() }, to, t: 0 };
   }
 
+  /** Point the camera at a bounding box from a FOH-ish angle so the whole thing is in view. */
+  function frameBounds(box) {
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3());
+    const radius = box.getSize(new THREE.Vector3()).length() / 2;
+    const dist = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.9;
+    const dir = new THREE.Vector3(0, 0.35, 1).normalize();
+    camTween = {
+      from: { pos: camera.position.clone(), target: controls.target.clone() },
+      to: { pos: center.clone().addScaledVector(dir, dist), target: center },
+      t: 0,
+    };
+    controls.maxDistance = Math.max(45, dist * 2);
+    camera.far = Math.max(200, dist * 6);
+    camera.updateProjectionMatrix();
+  }
+
   function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -93,5 +110,5 @@ export function createScene(container) {
     renderer.render(scene, camera);
   }
 
-  return { renderer, scene, camera, controls, render, setPreset };
+  return { renderer, scene, camera, controls, render, setPreset, frameBounds };
 }
