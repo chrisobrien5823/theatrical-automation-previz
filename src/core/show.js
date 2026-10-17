@@ -131,7 +131,7 @@ export function loadShow(raw) {
     if (!(scale > 0)) errors.push('model.scale must be > 0');
     const upAxis = raw.model.upAxis ?? 'y';
     if (upAxis !== 'y' && upAxis !== 'z') errors.push('model.upAxis must be "y" or "z"');
-    model = { name: raw.model.name ?? 'model', scale, upAxis, offset: vec3(raw.model.offset) };
+    model = { name: raw.model.name ?? 'model', scale, upAxis, offset: vec3(raw.model.offset), floor: !!raw.model.floor };
   }
   if (!model && pieces.some((p) => p.node)) errors.push('pieces reference model nodes but the show has no "model"');
 

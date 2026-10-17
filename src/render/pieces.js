@@ -24,6 +24,22 @@ export function createPieces(scene, show, modelView = null, modelPoses = null) {
   const items = new Map();
   const owned = []; // geometries / materials this module created and must dispose
 
+  // Optional stage floor at height 0, for model exports that don't include a deck.
+  if (modelView && show.model?.floor) {
+    const b = modelView.bounds();
+    const w = b.max.x - b.min.x + 4;
+    const d = b.max.z - b.min.z + 4;
+    const geom = new THREE.PlaneGeometry(w, d);
+    const mat = new THREE.MeshStandardMaterial({ color: '#2b2b30', roughness: 0.95 });
+    owned.push(geom, mat);
+    const floor = new THREE.Mesh(geom, mat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set((b.min.x + b.max.x) / 2, -0.002, (b.min.z + b.max.z) / 2);
+    floor.receiveShadow = true;
+    floor.name = 'stage-floor';
+    group.add(floor);
+  }
+
   for (const p of show.pieces) {
     const holder = new THREE.Group();
     holder.name = `piece:${p.id}`;

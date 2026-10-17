@@ -20,9 +20,12 @@ npm run build:single   # dist-single/ one self-contained index.html for USB / fi
 - **Load show…** (or drag a `.json` onto the stage) to run your own show file.
 
 ## Importing a set model (Rig mode, laptop)
-1. **Open…** (or drag onto the stage) a `.glb`, or a `.gltf` together with its `.bin` and textures.
+1. **Open…** (or drag onto the stage) a `.glb`, `.fbx` or `.obj`, or a `.gltf` together with its
+   `.bin` and textures. From Vectorworks, **File → Export → FBX** works directly.
    The import dialog guesses the units, lets you switch Y-up / Z-up (CAD exports are often Z-up),
-   and shows the model's overall size so you can check it against a known dimension.
+   can add a stage floor at height 0, and shows the model's overall size so you can check it
+   against a known dimension. Lights and cameras in the export are dropped; all faces render
+   two-sided (soft goods are often zero-thickness planes).
 2. **Model tab:** click an object in 3D or in the list → **Make piece** (or *box per part* for
    L-shapes and units with gaps). Pieces are collision-checked; leave walls, pipes and masking static.
 3. **Moves with → ＋ New Lift / Fly / Wagon / Revolve** creates an axis centered on the piece and

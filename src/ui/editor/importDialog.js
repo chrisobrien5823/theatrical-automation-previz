@@ -13,7 +13,7 @@ const TRI_WARN = 1_500_000;
  */
 export function openImportDialog(app, imported) {
   const prev = { raw: app.raw, source: app.source };
-  const s = { unit: guessUnits(imported.scene), upAxis: 'y', origin: 'keep' };
+  const s = { unit: guessUnits(imported.scene), upAxis: 'y', origin: 'keep', floor: true };
   const guessed = s.unit;
 
   const sizeLine = h('p', { class: 'mono size' });
@@ -41,6 +41,7 @@ export function openImportDialog(app, imported) {
         { class: 'muted' },
         `${imported.stats.meshes} meshes · ${imported.stats.triangles.toLocaleString()} triangles · ${imported.stats.nodes} nodes`,
       ),
+      ...(imported.notes ?? []).map((n) => h('p', { class: 'hint' }, n)),
       imported.stats.triangles > TRI_WARN
         ? h('p', { class: 'warn-text' }, 'Large model: it may be slow on phones. Consider simplifying the export.')
         : null,
@@ -64,6 +65,18 @@ export function openImportDialog(app, imported) {
           (v) => update({ origin: v }),
         ),
       ),
+      field(
+        'Stage floor',
+        select(
+          [
+            ['yes', 'Add a floor at height 0'],
+            ['no', 'None (the model has its own deck)'],
+          ],
+          s.floor ? 'yes' : 'no',
+          (v) => update({ floor: v === 'yes' }),
+        ),
+        'Visual only. Turn it off if the model has a deck with traps or a pit.',
+      ),
       sizeLine,
       h('p', { class: 'hint' }, 'Check one known dimension (e.g. proscenium width) against the size above.'),
       ].filter(Boolean),
@@ -71,7 +84,7 @@ export function openImportDialog(app, imported) {
   }
 
   function rawFor() {
-    let model = modelSettings({ name: imported.name, unit: s.unit, upAxis: s.upAxis });
+    let model = { ...modelSettings({ name: imported.name, unit: s.unit, upAxis: s.upAxis }), floor: s.floor };
     if (s.origin === 'floor') {
       const b = new ModelView(imported.scene, model).bounds();
       model = { ...model, offset: [-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2] };
