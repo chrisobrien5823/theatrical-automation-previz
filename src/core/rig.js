@@ -19,7 +19,21 @@ export function compose(parent, local) {
   };
 }
 
-const IDENTITY = { x: 0, y: 0, z: 0, yaw: 0 };
+/** Inverse of compose(): the pose of `world` expressed in the frame of `parent`. */
+export function relative(parent, world) {
+  const c = Math.cos(parent.yaw);
+  const s = Math.sin(parent.yaw);
+  const dx = world.x - parent.x;
+  const dz = world.z - parent.z;
+  return {
+    x: c * dx - s * dz,
+    y: world.y - parent.y,
+    z: s * dx + c * dz,
+    yaw: world.yaw - parent.yaw,
+  };
+}
+
+export const IDENTITY = Object.freeze({ x: 0, y: 0, z: 0, yaw: 0 });
 
 /** World pose of the moving carriage of each axis, given current axis positions. */
 export function axisPoses(show, positions) {
@@ -32,9 +46,12 @@ export function axisPoses(show, positions) {
     const parent = a.parent ? poseOf(a.parent) : IDENTITY;
     const pos = positions[id] ?? a.home;
     const [ox, oy, oz] = a.origin;
+    // Linear axes travel along `direction` (in the parent's frame): vertical for lifts and
+    // flys, horizontal for tracked wagons. Rotary axes turn about vertical.
+    const [dx, dy, dz] = a.direction ?? [0, 1, 0];
     const local =
       a.type === 'linear'
-        ? { x: ox, y: oy + pos, z: oz, yaw: 0 }
+        ? { x: ox + dx * pos, y: oy + dy * pos, z: oz + dz * pos, yaw: 0 }
         : { x: ox, y: oy, z: oz, yaw: pos * DEG };
     const pose = compose(parent, local);
     poses.set(id, pose);
@@ -45,7 +62,7 @@ export function axisPoses(show, positions) {
   return poses;
 }
 
-/** World pose of each piece's box center. */
+/** World pose of each piece's frame (box center for box pieces). */
 export function piecePoses(show, positions) {
   const ap = axisPoses(show, positions);
   const out = new Map();

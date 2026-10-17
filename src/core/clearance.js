@@ -6,11 +6,13 @@
 // where dY is the gap between the Y intervals and dPlan is the 2D distance between the rotated
 // rectangles (0 when they overlap). So we get a real distance, not just hit / no-hit.
 
-import { piecePoses, mountChain } from './rig.js';
+import { piecePoses, mountChain, compose } from './rig.js';
 
-/** Build the world-space prism for a piece at a pose. */
-export function prism(piece, pose) {
-  const [w, h, d] = piece.size;
+const DEG = Math.PI / 180;
+
+/** World-space prism for a box of the given size centered at a pose. */
+export function prism(size, pose) {
+  const [w, h, d] = size;
   return {
     cx: pose.x,
     cz: pose.z,
@@ -20,6 +22,29 @@ export function prism(piece, pose) {
     y0: pose.y - h / 2,
     y1: pose.y + h / 2,
   };
+}
+
+/**
+ * World-space prisms for every collision box of a piece. A piece has one or more boxes
+ * (`boxes: [{ offset, size, yaw }]` in the piece's own frame); an L-shaped wall is two boxes.
+ */
+export function piecePrisms(piece, pose) {
+  return piece.boxes.map((b) =>
+    prism(b.size, compose(pose, { x: b.offset[0], y: b.offset[1], z: b.offset[2], yaw: (b.yaw ?? 0) * DEG })),
+  );
+}
+
+/** Minimum gap between two compound pieces (min over their box pairs). */
+export function piecesGap(prismsA, prismsB) {
+  let best = Infinity;
+  for (const a of prismsA) {
+    for (const b of prismsB) {
+      const g = prismGap(a, b);
+      if (g < best) best = g;
+      if (best === 0) return 0;
+    }
+  }
+  return best;
 }
 
 /** Plan-view corners of a prism, counter-clockwise. Uses the same yaw convention as rig.js. */
@@ -136,13 +161,13 @@ export function pairKey(a, b) {
 export function checkClearance(show, positions, pairs = buildPairs(show)) {
   const poses = piecePoses(show, positions);
   const prisms = new Map();
-  const prismOf = (p) => {
-    if (!prisms.has(p.id)) prisms.set(p.id, prism(p, poses.get(p.id)));
+  const prismsOf = (p) => {
+    if (!prisms.has(p.id)) prisms.set(p.id, piecePrisms(p, poses.get(p.id)));
     return prisms.get(p.id);
   };
   const hits = [];
   for (const [a, b] of pairs) {
-    const gap = prismGap(prismOf(a), prismOf(b));
+    const gap = piecesGap(prismsOf(a), prismsOf(b));
     if (gap < show.clearance) {
       hits.push({ a, b, key: pairKey(a.id, b.id), gap, severity: gap <= 1e-6 ? 'contact' : 'warning' });
     }
