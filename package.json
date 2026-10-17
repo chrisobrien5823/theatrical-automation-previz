@@ -1,0 +1,22 @@
+{
+  "name": "stage-automation-previz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:single": "vite build --mode single",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "vite": "5.4.10",
+    "vite-plugin-singlefile": "2.0.3",
+    "vitest": "2.1.4"
+  }
+}
