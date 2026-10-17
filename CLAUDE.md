@@ -25,11 +25,36 @@ Browser-based 3D previsualization of scenic automation cues, with clearance/coll
 - Rendering and clearance both use poses from `src/core/rig.js`, so what is drawn is what is checked.
 - Demo show lives in `src/shows/demo.json`; `tests/preflight.test.js` asserts Q3 is the only flagged cue. Retune both together.
 
-## Plan (about 3.5 weeks)
-1. **Week 1 (starts Sat Oct 17):** Three.js stage, three axes, cue list moving pieces between positions.
-2. **Week 2:** Motion profiles, bounding boxes, clearance check, conflict log.
-3. **Week 3:** Mobile UI polish (GO, reset, cue list panel), demo sequence with intentional near-miss.
-4. **Final days:** Backup video, practice a 30-second pitch.
+## Status (as of Sat Oct 17, 2026)
+The original 3.5-week plan is done in its first day. Live at https://chrisobrien5823.github.io/theatrical-automation-previz/ (every push to `main` deploys via `.github/workflows/deploy.yml`; never re-run an old Actions run, it republishes old code).
+- **Run mode:** demo show (lift, revolve, fly), trapezoid motion, GO / STOP (ramped) / RESET, preflight ⚠ badges, live red highlighting, conflict log, camera presets, 1×/2×/4× speed, phone layout, offline service worker, single-file USB build.
+- **Rig mode (laptop, ≥ 820 px wide):** import `.glb/.gltf/.fbx/.obj` → make pieces (one box or box per part) → lift / fly / wagon / revolve axes (stackable) → jog with live gaps → record and edit cues → Save `.previz` (show + model in one file) + browser autosave.
+- **Real model tested:** the university theater's Vectorworks FBX (`samples/O'Brien P&P 3D Model.fbx`, git-ignored; keep it and its `.previz` saves private).
+- 51 unit tests pass (`npm test`). Details of decisions and gotchas are in claude-mem (project `3D_Previz_Software`) and the open to-dos in its `rock-lititz-demo` work-state list.
+
+Still open before Nov 6: real-phone test, offline test, USB backup check, QR code, AutoCAD stage file (when it arrives; must be 3D), backup video, pitch practice.
+
+## Next session focus: UI changes and animation smoothness
+Start by asking which items matter most, then measure before changing (frame times in the browser, on desktop and a real phone).
+
+**Animation smoothness: known causes to check first**
+1. **Stepped rendering (likely the biggest visible judder).** `frame()` in `src/main.js` advances the sim in whole 10 ms steps (`SIM_STEP`) and draws the position at the last step boundary. At 60 Hz that alternates 1 and 2 steps per frame; on 120 Hz phones it's 0 or 1. Fix: keep the 10 ms steps for clearance checks (live and preflight must stay identical), but draw poses at the exact time by sampling the motion profiles at `cueTime + leftover accumulator`.
+2. **Motion profile shape.** Trapezoid profiles have instant acceleration changes, which look abrupt. Add the jerk-limited **S-curve** option in `src/core/profile.js` behind the same `planMove()` interface, with unit tests like the trapezoid ones.
+3. **Hitches at the end of a cue.** `refreshPreflight()` re-sweeps the rest of the show synchronously on `cueComplete`. It's fine for the demo but may stall on big models; move it to `requestIdleCallback` or a Web Worker (the core is pure JS, so it can run in a worker).
+4. **Rig edits rebuild the whole scene** (`load()` with `keep: true`). Jogging doesn't, but every field edit does. Consider updating only what changed.
+5. **Phone GPU cost.** Soft shadows + pixel ratio up to 2 (`src/render/scene.js`). Consider adaptive quality (drop shadows / pixel ratio if frames run long).
+6. **Per-frame DOM writes.** Axis readouts and the HUD set text every frame; only update when values change.
+
+**UI ideas (pick with the user)**
+- Timeline scrubber for the current cue, with conflict windows marked; drag to any moment.
+- 3D gap indicator: a line between the two closest points with a distance label.
+- Friendlier default piece names (strip Vectorworks prefixes like `Solid_Subtraction_Set_`).
+- Undo / redo in Rig mode.
+- Velocity readout sparkline per axis; a clearer "moving" state.
+- First-run hints for Rig mode (import → make piece → add axis → jog → record).
+- Booth polish: larger HUD text on phones, an idle "attract" loop that replays the Q3 near-miss.
+
+Keep the existing rules: `src/core/` stays Three.js-free and tested; `tests/preflight.test.js` must still flag only Q3 in the demo. Edit files with the Edit tool or Bash, not PowerShell `Set-Content` (it corrupts the UI's UTF-8 symbols).
 
 ## Stretch ideas (only if time remains)
 - **Operator training mode:** inject faults (axis stall, overshoot, e-stop) for the user to respond to.
