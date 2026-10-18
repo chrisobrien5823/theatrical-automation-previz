@@ -3,67 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0d0e12" />
+    <meta name="theme-color" content="#0a0d11" />
     <meta name="description" content="Browser previz of stage automation cues with clearance checking." />
     <title>Stage Automation Previz</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d0e12'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23ffb020' stroke-width='3'/%3E%3Crect x='9' y='5' width='14' height='4' fill='%233fd17a'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230a0d11'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23ffb020' stroke-width='3'/%3E%3Crect x='9' y='5' width='14' height='4' fill='%2338d97a'/%3E%3C/svg%3E" />
   </head>
   <body>
     <div id="app">
-      <main id="stage">
-        <div id="viewport" aria-label="3D stage view"></div>
+      <main id="stage" aria-label="Stage">
+        <div id="viewport" role="img" aria-label="3D stage view. Drag to orbit, pinch or scroll to zoom."></div>
+        <div class="stage-top">
         <header class="hud">
-          <div class="hud-title"><span class="dot" id="statusDot"></span><span id="showName">Loading…</span></div>
-          <div class="hud-cue"><span id="hudCue">Ready</span> <span id="hudTime" class="mono"></span></div>
+          <div class="hud-state"><span class="lamp" id="statusLamp"></span><span id="statusWord" class="state-word">Ready</span></div>
+          <div class="hud-cue"><span id="hudCue"></span><span id="hudTime" class="mono"></span></div>
         </header>
-        <div id="alert" class="alert" role="status" aria-live="polite" hidden></div>
-        <div class="cams" id="cams" aria-label="Camera presets"></div>
+        <div class="axis-bus" id="axisBus" role="list" aria-label="Axis status"></div>
+        </div>
+        <div class="stage-msgs">
+          <div id="alert" class="alert" hidden></div>
+          <div id="caught" class="caught" hidden></div>
+        </div>
+        <div class="cams" id="cams" role="group" aria-label="Camera"></div>
+        <div id="announce" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
       </main>
 
-      <aside id="panel">
-        <div class="mode-switch desktop-only" role="tablist" aria-label="Mode">
-          <button data-mode="run" aria-selected="true">Run</button>
-          <button data-mode="rig" aria-selected="false">Rig</button>
+      <aside id="panel" aria-label="Show control">
+        <div class="panel-head">
+          <h1 id="showName" class="show-name">Loading…</h1>
+          <div class="mode-switch desktop-only" role="tablist" aria-label="Mode">
+            <button type="button" role="tab" id="mode-run" data-mode="run" aria-controls="runPanel" aria-selected="true">Run</button>
+            <button type="button" role="tab" id="mode-rig" data-mode="rig" aria-controls="rigPanel" aria-selected="false" tabindex="-1">Rig</button>
+          </div>
         </div>
 
-        <div id="runPanel" class="panel-body">
-        <div class="standby">
-          <span class="label">Standby</span>
-          <span id="standby" class="standby-cue">—</span>
-        </div>
-        <div class="transport">
-          <button id="go" class="btn btn-go" title="GO (Space)">GO</button>
-          <button id="stop" class="btn btn-stop" title="STOP (Esc)">STOP</button>
-          <button id="reset" class="btn btn-reset" title="RESET (R)">RESET</button>
-        </div>
-        <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+        <div id="runPanel" class="panel-body" role="tabpanel" aria-labelledby="mode-run">
+          <div class="standby">
+            <span class="lamp" id="standbyLamp"></span>
+            <span class="legend">Standby</span>
+            <span id="standby" class="standby-cue">—</span>
+          </div>
+          <p id="standbyNote" class="standby-note" hidden></p>
+          <div class="transport">
+            <button id="go" type="button" class="btn btn-go" aria-keyshortcuts="Space">GO</button>
+            <div class="estop">
+              <button id="stop" type="button" class="btn btn-stop" aria-keyshortcuts="Escape">STOP</button>
+            </div>
+            <button id="reset" type="button" class="btn btn-reset" aria-keyshortcuts="R">RESET</button>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
 
-        <nav class="tabs" role="tablist">
-          <button role="tab" data-tab="cues" aria-selected="true">Cues</button>
-          <button role="tab" data-tab="axes" aria-selected="false">Axes</button>
-          <button role="tab" data-tab="log" aria-selected="false">Log <span id="logCount" class="count" hidden></span></button>
-        </nav>
-        <section class="tab" id="tab-cues"><ol id="cueList" class="cue-list"></ol></section>
-        <section class="tab" id="tab-axes" hidden><div id="axes" class="axes"></div></section>
-        <section class="tab" id="tab-log" hidden>
-          <ul id="log" class="log"></ul>
-        </section>
+          <div class="tabs" role="tablist" aria-label="Run views">
+            <button type="button" role="tab" id="tabbtn-cues" data-tab="cues" aria-controls="tab-cues" aria-selected="true">Cues</button>
+            <button type="button" role="tab" id="tabbtn-axes" data-tab="axes" aria-controls="tab-axes" aria-selected="false" tabindex="-1">Axes</button>
+            <button type="button" role="tab" id="tabbtn-log" data-tab="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">Log <span id="logCount" class="count" hidden></span></button>
+          </div>
+          <section class="tab" id="tab-cues" role="tabpanel" aria-labelledby="tabbtn-cues"><ol id="cueList" class="cue-list"></ol></section>
+          <section class="tab" id="tab-axes" role="tabpanel" aria-labelledby="tabbtn-axes" hidden><div id="axes" class="axes"></div></section>
+          <section class="tab" id="tab-log" role="tabpanel" aria-labelledby="tabbtn-log" hidden><ul id="log" class="log"></ul></section>
         </div>
 
-        <div id="rigPanel" class="panel-body" hidden></div>
+        <div id="rigPanel" class="panel-body" role="tabpanel" aria-labelledby="mode-rig" hidden></div>
 
         <footer class="panel-foot">
-          <label class="speed">Speed
+          <label class="speed" title="Playback speed. Clearance is checked every 10 ms of show time at any speed, so results never change.">Speed
             <select id="speed">
               <option value="1">1×</option>
               <option value="2">2×</option>
               <option value="4">4×</option>
             </select>
           </label>
-          <label class="file-btn">Open…<input id="fileInput" type="file" accept=".json,.previz,.glb,.gltf,.bin,.fbx,.obj,.png,.jpg,.jpeg,application/json" multiple hidden /></label>
+          <button id="openFile" class="file-btn" type="button">Open…</button>
+          <input id="fileInput" type="file" accept=".json,.previz,.glb,.gltf,.bin,.fbx,.obj,.png,.jpg,.jpeg,application/json" multiple hidden />
           <button id="saveProject" class="file-btn desktop-only" type="button">Save</button>
           <button id="loadDemo" class="file-btn" type="button">Demo</button>
-          <span class="keys">Space GO · Esc STOP · R RESET</span>
+          <span class="keys" aria-hidden="true"><kbd>Space</kbd> GO <kbd>Esc</kbd> STOP <kbd>R</kbd> RESET</span>
         </footer>
       </aside>
     </div>

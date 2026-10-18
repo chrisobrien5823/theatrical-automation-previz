@@ -18,8 +18,8 @@ export function createScene(container) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#0d0e12');
-  scene.fog = new THREE.Fog('#0d0e12', 30, 60);
+  scene.background = new THREE.Color('#090c10');
+  scene.fog = new THREE.Fog('#090c10', 30, 60);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -84,6 +84,53 @@ export function createScene(container) {
     camera.updateProjectionMatrix();
   }
 
+  // Note when the user steers the camera, so automatic framing never fights their hands.
+  let userSteeredAt = -Infinity;
+  controls.addEventListener('start', () => {
+    userSteeredAt = performance.now();
+    camTween = null;
+  });
+
+  /**
+   * Swing the camera to look across a gap ({x, y, z} midpoint and direction): side-on to the gap direction, from the side the camera is
+   * already on, a little above. Skipped if the user moved the camera in the last few seconds.
+   */
+  function focusGap(at, gapDir, { distance = 8, elevation = 0.95, respectUserMs = 8000 } = {}) {
+    if (performance.now() - userSteeredAt < respectUserMs) return false;
+    const point = new THREE.Vector3(at.x, at.y, at.z);
+    const flat = new THREE.Vector3(gapDir.x, 0, gapDir.z);
+    if (flat.lengthSq() < 1e-8) flat.set(1, 0, 0); // vertical gap: any side view shows it
+    flat.normalize();
+    const side = new THREE.Vector3(-flat.z, 0, flat.x);
+    const toCam = new THREE.Vector3().subVectors(camera.position, point);
+    // Look from downstage (the audience side) when that's a real choice, otherwise stay on the camera's side.
+    if (Math.abs(side.z) > 0.3 ? side.z < 0 : side.dot(toCam) < 0) side.negate();
+    // High enough to look down into the gap: most clearance problems are in plan (a sweep past a unit).
+    const dir = side.multiplyScalar(Math.cos(elevation)).add(new THREE.Vector3(0, Math.sin(elevation), 0));
+    camTween = {
+      from: { pos: camera.position.clone(), target: controls.target.clone() },
+      to: { pos: point.clone().addScaledVector(dir.normalize(), distance), target: point.clone() },
+      t: 0,
+    };
+    return true;
+  }
+
+  // Overlays (HUD and axis bus on top, camera control and messages at the bottom) cover part of the
+  // canvas. Shift the projection so the camera's aim lands in the middle of the clear band.
+  let insets = { top: 0, bottom: 0 };
+  function applyInsets() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    const shift = (insets.top - insets.bottom) / 2;
+    if (Math.abs(shift) < 1 || !w || !h) camera.clearViewOffset();
+    else camera.setViewOffset(w, h, 0, -shift, w, h);
+    camera.updateProjectionMatrix();
+  }
+  function setInsets(top, bottom) {
+    insets = { top, bottom };
+    applyInsets();
+  }
+
   function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -92,7 +139,7 @@ export function createScene(container) {
     camera.aspect = w / h;
     // Pull back a bit on narrow (portrait phone) screens so the whole stage fits.
     camera.fov = camera.aspect < 1 ? 60 : 45;
-    camera.updateProjectionMatrix();
+    applyInsets();
   }
   new ResizeObserver(resize).observe(container);
   resize();
@@ -110,5 +157,5 @@ export function createScene(container) {
     renderer.render(scene, camera);
   }
 
-  return { renderer, scene, camera, controls, render, setPreset, frameBounds };
+  return { renderer, scene, camera, controls, render, setPreset, frameBounds, focusGap, setInsets };
 }

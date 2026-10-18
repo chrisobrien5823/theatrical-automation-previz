@@ -7,7 +7,7 @@ export function createLog(el, countEl, { onJump }) {
   const entries = new Map(); // window object -> li
 
   function empty() {
-    el.innerHTML = '<li class="empty">No conflicts yet. Preflight badges in the cue list show what is coming.</li>';
+    el.innerHTML = '<li class="empty">No conflicts yet. The warning badges in the cue list show what preflight expects.</li>';
   }
   empty();
 
@@ -28,13 +28,18 @@ export function createLog(el, countEl, { onJump }) {
     const li = document.createElement('li');
     li.className = w.severity;
     li.dataset.ts = clockTime();
-    li.title = 'Load the stage state before this cue';
-    li.addEventListener('click', () => onJump(cueIndex));
+    // The whole entry is a button: it loads the stage as it stood just before this cue.
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'log-jump';
+    btn.addEventListener('click', () => onJump(cueIndex));
+    li.append(btn);
     entries.set(w, li);
     render(w, li, true);
     prepend(li);
     conflictCount++;
     countEl.textContent = conflictCount;
+    countEl.setAttribute('aria-label', `${conflictCount} conflict${conflictCount === 1 ? '' : 's'}`);
     countEl.hidden = false;
   }
 
@@ -48,10 +53,10 @@ export function createLog(el, countEl, { onJump }) {
 
   function render(w, li, live) {
     const span = live ? `from t=${w.tStart.toFixed(2)}s` : `t=${w.tStart.toFixed(2)}–${w.tEnd.toFixed(2)}s`;
-    li.innerHTML =
+    li.firstChild.innerHTML =
       `<span class="ts">${li.dataset.ts}</span><b>Q${esc(w.cueId)}</b> · ${esc(w.aName)} ↔ ${esc(w.bName)}<br>` +
       `${w.severity === 'contact' ? 'CONTACT' : 'Inside clearance'} ${span} · min <span class="gap">${formatGap(w.minGap)}</span> at t=${w.tMin.toFixed(2)}s` +
-      (live ? ' …' : '');
+      (live ? ' …' : '<span class="log-hint">Load the stage before this cue</span>');
   }
 
   function clear() {

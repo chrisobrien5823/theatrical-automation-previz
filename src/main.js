@@ -1,25 +1,36 @@
 // Bootstrap: project (show JSON + optional model) -> simulator -> scene -> UI -> render loop.
 
+// Self-hosted faces (bundled, so the offline and single-file builds carry them): a condensed
+// engineering sans for engraved legends and transport, and a true mono for readouts.
+import '@fontsource/barlow-condensed/latin-600.css';
+import '@fontsource/barlow-condensed/latin-700.css';
+import '@fontsource/jetbrains-mono/latin-500.css';
+import '@fontsource/jetbrains-mono/latin-700.css';
 import './styles.css';
 import demoShow from './shows/demo.json';
 import { loadShow } from './core/show.js';
 import { Simulator } from './core/simulator.js';
-import { piecePoses } from './core/rig.js';
-import { buildPairs, checkClearance, ConflictTracker } from './core/clearance.js';
+import { piecePoses, mountChain } from './core/rig.js';
+import { buildPairs, checkClearance, ConflictTracker, pieceClosestPoints } from './core/clearance.js';
 import { preflightShow } from './core/preflight.js';
 import { modelPositions } from './core/edit.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
+import { createGapMarker } from './render/gapMarker.js';
 import { ModelView } from './model/modelView.js';
 import { readModelFiles, isModelFile } from './model/import.js';
 import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosave, exportGlb } from './model/project.js';
 import { createCueList } from './ui/cuelist.js';
 import { createReadouts } from './ui/readouts.js';
 import { createLog } from './ui/log.js';
-import { formatGap } from './ui/format.js';
+import { formatGap, esc } from './ui/format.js';
+import { icon } from './ui/icons.js';
+import { createAxisBus } from './ui/axisBus.js';
+import { selectTabButton, tabKeydown } from './ui/tabs.js';
 import { createRigPanel } from './ui/editor/rigPanel.js';
 import { openImportDialog } from './ui/editor/importDialog.js';
+import sampleSetUrl from '../samples/test-set.glb?url';
 
 const SIM_STEP = 0.01; // fixed 10 ms sim step, same as preflight, so live and predicted results agree
 
@@ -33,21 +44,49 @@ const ui = {
   showName: $('showName'),
   hudCue: $('hudCue'),
   hudTime: $('hudTime'),
-  dot: $('statusDot'),
+  lamp: $('statusLamp'),
+  stateWord: $('statusWord'),
+  standbyLamp: $('standbyLamp'),
+  standbyNote: $('standbyNote'),
   alert: $('alert'),
+  caught: $('caught'),
+  announce: $('announce'),
   speed: $('speed'),
   runPanel: $('runPanel'),
   rigPanel: $('rigPanel'),
 };
 
 const view = createScene($('viewport'));
-const cueList = createCueList($('cueList'), { onSelect: (i) => sim?.standby(i) });
+const gapMarker = createGapMarker(view, $('stage'));
+const axisBus = createAxisBus($('axisBus'));
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Keep the camera's aim in the part of the stage the overlays leave clear. On a phone the conflict
+// alert docks under the axis bus, so room is reserved for it at the top; on a laptop it sits low.
+const phoneLayout = window.matchMedia('(max-width: 820px)');
+function updateViewInsets() {
+  const top = document.querySelector('.stage-top').offsetHeight;
+  $('stage').style.setProperty('--stage-top-h', `${top}px`);
+  const camsEl = $('cams');
+  const cams = camsEl.offsetHeight + 24; // the control plus its margin and some air above it
+  view.setInsets(top + (phoneLayout.matches ? 48 : 0), cams + (phoneLayout.matches ? 0 : 52));
+}
+new ResizeObserver(updateViewInsets).observe(document.querySelector('.stage-top'));
+phoneLayout.addEventListener('change', updateViewInsets);
+const cueList = createCueList($('cueList'), {
+  onSelect: (i) => standbyCue(i),
+  onHint: () => toast('Hold a cue to put it in standby.'),
+});
 const readouts = createReadouts($('axes'));
 const log = createLog($('log'), $('logCount'), { onJump: (i) => loadStateBefore(i) });
 
 let project = { raw: demoShow, source: null };
 let show, sim, pairs, pieces, modelView, tracker, preflight, stateBefore;
 let hits = [];
+let ran = new Set(); // cue indices that actually ran since the last reset (the rest before standby were skipped)
+let halted = null; // cue that was STOPped mid-move; axes are parked short of its targets until GO / RESET
+let caught = null; // { cueIndex, w }: the worst clearance conflict of the last cue, shown until the next GO / RESET
+let framedThisCue = false; // the camera swings to the first conflict of a cue, once
 let speed = 1;
 let mode = 'run';
 let boxesVisible = true;
@@ -98,6 +137,19 @@ const app = {
     pieces.setBoxesVisible(mode === 'rig' && v);
   },
   setMode,
+  openFilePicker() {
+    $('fileInput').click();
+  },
+  /** Import the bundled CAD-style sample set (millimetres, Z-up), so Rig mode can be tried without a model. */
+  async openSample() {
+    try {
+      toast('Loading the sample set…');
+      const blob = await (await fetch(sampleSetUrl)).blob();
+      await openFiles([new File([blob], 'test-set.glb', { type: 'model/gltf-binary' })]);
+    } catch (err) {
+      toast(`Could not load the sample set: ${err.message}`);
+    }
+  },
   frameModel() {
     if (modelView) view.frameBounds(modelView.bounds());
   },
@@ -160,6 +212,9 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   sim.on(onSimEvent);
   tracker = new ConflictTracker();
   hits = [];
+  halted = null;
+  caught = null;
+  if (!keep) ran = new Set();
 
   // State of the stage before each cue when the show is run in order from home (for "jump to cue").
   const home = Object.fromEntries(show.axes.map((a) => [a.id, a.home]));
@@ -171,11 +226,12 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   document.title = `${show.name} · Stage Previz`;
   cueList.setShow(show);
   readouts.setShow(show);
+  axisBus.setShow(show);
   if (!keep) {
     log.clear();
     if (!quiet) {
       for (const w of result.warnings) log.info(`Show warning: ${w}`);
-      log.info(`Loaded "${show.name}": ${show.axes.length} axes, ${show.pieces.length} pieces, ${show.cues.length} cues, clearance ${show.clearance} m`);
+      log.info(`Loaded "${show.name}": ${show.axes.length} axes, ${show.pieces.length} pieces, ${show.cues.length} cues, clearance ${show.clearance} m. Checked every 10 ms of show time at any playback speed.`);
     }
   } else {
     for (const w of result.warnings) toast(w);
@@ -210,6 +266,28 @@ function refreshPreflightSoon() {
 function loadStateBefore(i) {
   if (!sim || sim.state !== 'idle' || !stateBefore[i]) return;
   sim.load(stateBefore[i], i);
+  caught = null;
+  // The stage now looks exactly as if Q1 … Q(i-1) had run in order from home.
+  ran = new Set(show.cues.slice(0, i).map((_, k) => k));
+  log.info(`Loaded the stage as it stands before Q${show.cues[i].id}. GO to replay it.`);
+  refreshUi();
+}
+
+/** Put a cue in standby from the cue list. Axes stay where they are; cues jumped over count as skipped. */
+function standbyCue(i) {
+  if (!sim) return;
+  if (sim.state !== 'idle') return toast('The cue list is locked while a cue runs. STOP first.');
+  const from = sim.cueIndex;
+  if (i === from || !sim.standby(i)) return;
+  const cue = show.cues[i];
+  if (i > from) {
+    const span = from === i - 1 ? `Q${show.cues[from].id}` : `Q${show.cues[from].id}–Q${show.cues[i - 1].id}`;
+    log.info(`Standby Q${cue.id}, skipped ${span}. Axes stay where they are; preflight now runs from here.`);
+  } else {
+    log.info(`Standby Q${cue.id} (back). Axes stay where they are; preflight now runs from here.`);
+  }
+  for (const k of [...ran]) if (k >= i) ran.delete(k);
+  refreshUi();
 }
 
 function updateOutline() {
@@ -248,12 +326,17 @@ function onSimEvent(ev) {
   switch (ev.type) {
     case 'cueStart': {
       tracker = new ConflictTracker();
-      log.info(`GO Q${cue.id} ${cue.name} (${sim.cueDuration.toFixed(1)} s)`);
+      halted = null;
+      caught = null;
+      framedThisCue = false;
+      log.info(sim.cueDuration >= 0.05 ? `GO Q${cue.id} ${cue.name} (${sim.cueDuration.toFixed(1)} s)` : `GO Q${cue.id} ${cue.name} (instant: axes already in position)`);
       trackHits(checkClearance(show, sim.positions(), pairs), cue, 0);
       break;
     }
     case 'cueComplete':
       closeWindows();
+      ran.add(show.cues.indexOf(cue));
+      setCaught(cue);
       log.info(`Q${cue.id} complete`);
       refreshPreflight();
       break;
@@ -262,17 +345,26 @@ function onSimEvent(ev) {
       break;
     case 'stopped':
       closeWindows();
-      log.info(`Axes at rest. GO re-runs Q${cue.id} from here.`);
+      halted = cue;
+      setCaught(cue);
+      log.info(`Axes at rest, short of Q${cue.id}'s targets. GO re-runs Q${cue.id} from here.`);
       refreshPreflight();
       break;
     case 'reset':
+      halted = null;
+      caught = null;
+      ran = new Set();
       log.info('RESET: all axes home, standby Q' + (show.cues[0]?.id ?? '—'));
       refreshPreflight();
       break;
     case 'load':
+      halted = null;
+      caught = null;
       refreshPreflightSoon(); // jogging fires this on every slider tick
       break;
     case 'standby':
+      halted = null;
+      caught = null;
       refreshPreflight();
       break;
     case 'endOfShow':
@@ -287,7 +379,8 @@ function trackHits(stepHits, cue, cueTime) {
   const cueIndex = show.cues.indexOf(cue);
   for (const w of opened) {
     log.conflictOpened(w, cueIndex);
-    selectTabIfPhone('log');
+    announce(`Clearance conflict in Q${w.cueId}: ${w.aName} and ${w.bName} inside ${show.clearance.toFixed(3)} metres.`);
+    if (!framedThisCue) framedThisCue = frameConflict(w);
   }
   for (const w of closed) log.conflictUpdated(w, true);
   for (const w of tracker.open.values()) log.conflictUpdated(w, false);
@@ -295,6 +388,44 @@ function trackHits(stepHits, cue, cueTime) {
 
 function closeWindows() {
   for (const w of tracker.flush()) log.conflictUpdated(w, true);
+}
+
+/** After a cue ends (or is stopped), keep its worst conflict on screen until the next GO / RESET. */
+function setCaught(cue) {
+  const windows = tracker.closed.filter((w) => w.cueId === cue.id);
+  if (!windows.length) return;
+  const w = windows.reduce((a, b) => (b.minGap < a.minGap ? b : a));
+  caught = { cueIndex: show.cues.indexOf(cue), w, more: windows.length - 1 };
+  announce(
+    `Caught in Q${cue.id}: ${w.aName} and ${w.bName} came within ${w.severity === 'contact' ? 'contact' : w.minGap.toFixed(3) + ' metres'} against a clearance of ${show.clearance.toFixed(3)}.`,
+  );
+}
+
+/** Swing the camera side-on to a gap that just opened, unless the user is steering or prefers less motion. */
+function frameConflict(w) {
+  if (reducedMotion.matches) return true;
+  const a = show.pieces.find((p) => p.id === w.a);
+  const b = show.pieces.find((p) => p.id === w.b);
+  const pts = a && b && pieceClosestPoints(show, sim.positions(), a, b);
+  if (!pts) return false;
+  const mid = { x: (pts.a[0] + pts.b[0]) / 2, y: (pts.a[1] + pts.b[1]) / 2, z: (pts.a[2] + pts.b[2]) / 2 };
+  const dir = { x: pts.b[0] - pts.a[0], y: pts.b[1] - pts.a[1], z: pts.b[2] - pts.a[2] };
+  const moved = view.focusGap(mid, dir);
+  if (moved) setActiveCam(null);
+  return true;
+}
+
+function announce(text) {
+  ui.announce.textContent = '';
+  // A fresh text node after a tick makes screen readers read it even when the text repeats.
+  setTimeout(() => (ui.announce.textContent = text), 30);
+}
+
+function replayCaught() {
+  if (!caught || sim.state !== 'idle') return;
+  const i = caught.cueIndex;
+  loadStateBefore(i);
+  go();
 }
 
 // ---------- Transport ----------
@@ -323,6 +454,9 @@ ui.speed.addEventListener('change', () => (speed = Number(ui.speed.value)));
 window.addEventListener('keydown', (e) => {
   if (e.target.closest('input, select, textarea, summary')) return;
   if (document.querySelector('.modal-wrap')) return;
+  // Space is GO everywhere in Run mode, like a show-control desk. In the Rig panel, tabs and footer
+  // it keeps its normal meaning so keyboard users can press the focused button.
+  if (e.code === 'Space' && e.target.closest?.('#rigPanel, [role="tablist"], .cams, .panel-foot, .chip')) return;
   if (e.code === 'Space') {
     e.preventDefault();
     go();
@@ -335,32 +469,61 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- Modes, tabs, cameras ----------
 
+// Rig mode needs room for the panel and precise pointing; phones and narrow windows stay in Run.
+const rigFits = window.matchMedia('(min-width: 821px) and (min-height: 521px)');
+rigFits.addEventListener('change', () => {
+  if (!rigFits.matches && mode === 'rig') {
+    setMode('run');
+    toast('Rig mode needs a laptop-sized window (at least 820 px wide). Back in Run mode.');
+  }
+});
+
 function setMode(m) {
+  if (m === 'rig' && !rigFits.matches) {
+    toast('Rig mode needs a laptop-sized window (at least 820 px wide). This project opens in Run mode here.');
+    m = 'run';
+  }
   mode = m;
-  for (const b of document.querySelectorAll('.mode-switch button')) b.setAttribute('aria-selected', String(b.dataset.mode === m));
+  if (m === 'rig' && caught) {
+    caught = null; // the Run-mode result card doesn't belong over editing
+    renderCaught();
+  }
+  selectTabButton(document.querySelector('.mode-switch'), 'mode', m);
   ui.runPanel.hidden = m !== 'run';
   ui.rigPanel.hidden = m !== 'rig';
   pieces.setBoxesVisible(m === 'rig' && boxesVisible);
   updateOutline();
   if (m === 'rig') rig.rerender();
 }
-for (const b of document.querySelectorAll('.mode-switch button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+const modeSwitch = document.querySelector('.mode-switch');
+for (const b of modeSwitch.querySelectorAll('[role="tab"]')) b.addEventListener('click', () => setMode(b.dataset.mode));
+modeSwitch.addEventListener('keydown', (e) => tabKeydown(e, (b) => setMode(b.dataset.mode)));
 
+const runTabs = ui.runPanel.querySelector('.tabs');
 function selectTab(name) {
-  for (const b of ui.runPanel.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
+  selectTabButton(runTabs, 'tab', name);
   for (const s of ui.runPanel.querySelectorAll('.tab')) s.hidden = s.id !== `tab-${name}`;
 }
-function selectTabIfPhone(name) {
-  if (window.matchMedia('(max-width: 820px), (max-height: 520px)').matches) selectTab(name);
-}
-for (const b of ui.runPanel.querySelectorAll('.tabs button')) b.addEventListener('click', () => selectTab(b.dataset.tab));
+for (const b of runTabs.querySelectorAll('[role="tab"]')) b.addEventListener('click', () => selectTab(b.dataset.tab));
+runTabs.addEventListener('keydown', (e) => tabKeydown(e, (b) => selectTab(b.dataset.tab)));
 
+const camButtons = new Map();
+function setActiveCam(name) {
+  for (const [n, b] of camButtons) b.setAttribute('aria-pressed', String(n === name));
+}
 for (const name of Object.keys(CAMERA_PRESETS)) {
   const b = document.createElement('button');
+  b.type = 'button';
   b.textContent = name;
-  b.addEventListener('click', () => view.setPreset(name));
+  b.addEventListener('click', () => {
+    view.setPreset(name);
+    setActiveCam(name);
+  });
+  camButtons.set(name, b);
   $('cams').appendChild(b);
 }
+setActiveCam('FOH');
+view.controls.addEventListener('start', () => setActiveCam(null));
 
 let toastTimer = null;
 const toastEl = Object.assign(document.createElement('div'), { className: 'toast', hidden: true });
@@ -393,6 +556,7 @@ async function openFiles(fileList) {
   }
 }
 
+$('openFile').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', (e) => {
   openFiles(e.target.files);
   e.target.value = '';
@@ -430,6 +594,14 @@ $('loadDemo').addEventListener('click', () => {
 
 // ---------- UI refresh ----------
 
+/** Set text only when it changed (the HUD refreshes every frame). */
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
+function setLamp(el, state) {
+  if (el.dataset.state !== state) el.dataset.state = state;
+}
+
 function refreshUi() {
   const running = sim.state !== 'idle';
   // While a cue runs, standby shows the one after it (what the next GO will take once this completes).
@@ -438,39 +610,105 @@ function refreshUi() {
   ui.go.disabled = running || !sim.nextCue;
   ui.stop.disabled = sim.state !== 'running';
   const flagged = next && preflight[nextIndex]?.conflicts.length;
-  ui.standby.textContent = next ? `Q${next.id} ${next.name}${flagged ? '  ⚠' : ''}` : 'End of list';
-  ui.standby.style.color = flagged ? 'var(--red)' : '';
+  ui.standby.innerHTML = next ? `<span class="mono">Q${esc(next.id)}</span> ${esc(next.name)}` + (flagged ? ` ${icon('warn', 'preflight conflict')}` : '') : 'End of list';
+  ui.standby.classList.toggle('flagged', !!flagged);
+  setLamp(ui.standbyLamp, next ? (flagged ? 'clash' : 'standby') : 'off');
+
+  const skipped = sim.cueIndex > 0 && [...Array(sim.cueIndex).keys()].some((k) => !ran.has(k));
+  const note = halted
+    ? `Stopped mid-cue: axes are short of Q${halted.id}'s targets. GO finishes it from here.`
+    : skipped && !running
+      ? 'Cues were skipped, so the stage is not where the show expects. Preflight runs from the current positions.'
+      : '';
+  ui.standbyNote.hidden = !note;
+  setText(ui.standbyNote, note);
+
   cueList.setState({
     standbyIndex: sim.cueIndex,
     runningIndex: running ? show.cues.indexOf(sim.activeCue) : null,
+    ran,
+    conflict: running && hits.length > 0,
+  });
+  renderCaught();
+}
+
+let caughtShown = null;
+function renderCaught() {
+  if (caught === caughtShown) return;
+  caughtShown = caught;
+  ui.caught.hidden = !caught;
+  if (!caught) return ui.caught.replaceChildren();
+  const { w, more, cueIndex } = caught;
+  const cue = show.cues[cueIndex];
+  const gap = w.severity === 'contact' ? 'contact' : `<span class="mono">${formatGap(w.minGap)}</span>`;
+  ui.caught.innerHTML = `
+    <span class="lamp" data-state="clash"></span>
+    <div class="caught-text">
+      <b>Caught in Q${esc(cue.id)}</b>
+      <span>${esc(w.aName)} ↔ ${esc(w.bName)} came within ${gap} at t=<span class="mono">${w.tMin.toFixed(2)} s</span>. Clearance is <span class="mono">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>
+    </div>
+    <button type="button" class="caught-replay">${icon('replay')}Replay Q${esc(cue.id)}</button>
+    <button type="button" class="caught-close" aria-label="Dismiss">${icon('close')}</button>`;
+  ui.caught.querySelector('.caught-replay').addEventListener('click', replayCaught);
+  ui.caught.querySelector('.caught-close').addEventListener('click', () => {
+    caught = null;
+    renderCaught();
   });
 }
 
-function refreshHud() {
+let progressShown = -1;
+let alertKey = '';
+function refreshHud(worst) {
   const running = sim.state !== 'idle';
+  let word;
+  let lamp;
+  if (hits.length) [word, lamp] = ['Conflict', 'clash'];
+  else if (sim.state === 'stopping') [word, lamp] = ['Stopping', 'standby']; // amber = held, not a clearance problem
+  else if (running) [word, lamp] = ['Running', 'moving'];
+  else if (halted) [word, lamp] = ['Stopped', 'standby'];
+  else [word, lamp] = [mode === 'rig' ? 'Rig' : 'Ready', 'ready'];
+  setText(ui.stateWord, word);
+  setLamp(ui.lamp, lamp);
+
+  let pct = 0;
   if (running) {
     const c = sim.activeCue;
-    ui.hudCue.textContent = `${sim.state === 'stopping' ? 'STOPPING' : 'Q' + c.id} ${c.name}`;
-    ui.hudTime.textContent = `${sim.cueTime.toFixed(2)} / ${sim.cueDuration.toFixed(2)} s`;
-    ui.progress.style.width = `${Math.min(100, (100 * sim.cueTime) / (sim.cueDuration || 1))}%`;
+    setText(ui.hudCue, `Q${c.id} ${c.name}`);
+    setText(ui.hudTime, `${sim.cueTime.toFixed(2)} / ${sim.cueDuration.toFixed(2)} s`);
+    pct = Math.min(100, (100 * sim.cueTime) / (sim.cueDuration || 1));
   } else {
-    ui.hudCue.textContent = mode === 'rig' ? 'Rig mode' : 'Ready';
-    ui.hudTime.textContent = '';
-    ui.progress.style.width = '0%';
+    const next = sim.nextCue;
+    setText(ui.hudCue, halted ? `Q${halted.id} not at target` : next ? `Standby Q${next.id}` : show.cues.length ? 'End of list' : 'No cues yet');
+    setText(ui.hudTime, '');
   }
-  ui.dot.className = `dot ${hits.length ? 'conflict' : sim.state === 'idle' ? '' : sim.state}`;
+  pct = Math.round(pct * 10) / 10;
+  if (pct !== progressShown) ui.progress.style.width = `${(progressShown = pct)}%`;
 
-  if (hits.length) {
-    const worst = hits.reduce((a, b) => (b.gap < a.gap ? b : a));
-    ui.alert.hidden = false;
-    ui.alert.classList.toggle('contact', worst.severity === 'contact');
-    ui.alert.textContent = `⚠ ${worst.a.name} ↔ ${worst.b.name}: ${formatGap(worst.gap)}` + (hits.length > 1 ? ` (+${hits.length - 1})` : '');
-  } else {
+  if (worst) {
+    const key = `${worst.key}|${worst.severity}|${formatGap(worst.gap)}|${hits.length}`;
+    if (key !== alertKey) {
+      alertKey = key;
+      ui.alert.hidden = false;
+      ui.alert.classList.toggle('contact', worst.severity === 'contact');
+      ui.alert.innerHTML =
+        `${icon('warn')}<span>${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="mono">${formatGap(worst.gap)}</span>` +
+        `<span class="alert-limit">of <span class="mono">${formatGap(show.clearance)}</span></span>` +
+        (hits.length > 1 ? `<span class="alert-more">+${hits.length - 1}</span>` : '');
+    }
+  } else if (alertKey) {
+    alertKey = '';
     ui.alert.hidden = true;
   }
 }
 
 // ---------- Render loop ----------
+
+// Dev only: `?frames=timer` drives the loop from a timer, for automated checks in a hidden or
+// background browser tab where requestAnimationFrame never fires.
+const nextFrame =
+  import.meta.env.DEV && new URLSearchParams(location.search).get('frames') === 'timer'
+    ? (f) => setTimeout(() => f(performance.now()), 16)
+    : requestAnimationFrame;
 
 let last = performance.now();
 let simAccumulator = 0;
@@ -497,22 +735,33 @@ function frame(now) {
   }
 
   const positions = sim.positions();
+  const hadHits = hits.length > 0;
   hits = checkClearance(show, positions, pairs);
   pieces.update(piecePoses(show, positions));
   const sev = new Map();
+  const clashing = new Set();
   for (const h of hits) {
-    for (const id of [h.a.id, h.b.id]) if (sev.get(id) !== 'contact') sev.set(id, h.severity);
+    for (const p of [h.a, h.b]) {
+      if (sev.get(p.id) !== 'contact') sev.set(p.id, h.severity);
+      for (const axisId of mountChain(show, p)) clashing.add(axisId);
+    }
   }
-  pieces.highlight(sev, elapsed);
+  pieces.highlight(sev, reducedMotion.matches ? 0 : elapsed);
+  const worst = hits.length ? hits.reduce((a, b) => (b.gap < a.gap ? b : a)) : null;
+  gapMarker.set(worst && pieceClosestPoints(show, positions, worst.a, worst.b), worst ? formatGap(worst.gap) : '');
   picking.update();
-  readouts.update(sim.axisStates());
-  refreshHud();
+  const states = sim.axisStates();
+  readouts.update(states);
+  axisBus.update(states, clashing);
+  refreshHud(worst);
+  if (hadHits !== hits.length > 0) refreshUi(); // running cue row turns to its conflict state and back
   view.render(dt);
-  requestAnimationFrame(frame);
+  gapMarker.update();
+  nextFrame(frame);
 }
 
 load(demoShow, null);
-requestAnimationFrame(frame);
+nextFrame(frame);
 
 // Restore the last imported / edited project, if there is one.
 loadAutosave().then((saved) => {

@@ -25,7 +25,7 @@ export function createPicking(view, { enabled, targets, onPick }) {
     onPick(hit?.object ?? null, e);
   });
 
-  const helper = new THREE.BoxHelper(undefined, '#ffd400');
+  const helper = new THREE.BoxHelper(undefined, '#f2f6fa');
   helper.material.depthTest = false;
   helper.material.transparent = true;
   helper.renderOrder = 20;

@@ -122,6 +122,110 @@ export function rectDistance(a, b) {
   return best;
 }
 
+/** Closest point on segment ab to p (plan view). */
+function closestOnSeg([px, pz], [ax, az], [bx, bz]) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const len2 = dx * dx + dz * dz;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) : 0;
+  return [ax + t * dx, az + t * dz];
+}
+
+function signedArea(poly) {
+  let s = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const [x0, z0] = poly[i];
+    const [x1, z1] = poly[(i + 1) % poly.length];
+    s += x0 * z1 - x1 * z0;
+  }
+  return s / 2;
+}
+
+/** Intersection of two convex polygons (Sutherland-Hodgman). Empty when they only touch. */
+function clipConvex(subject, clip) {
+  const orient = Math.sign(signedArea(clip)) || 1;
+  let out = subject;
+  for (let i = 0; i < clip.length && out.length; i++) {
+    const [ax, az] = clip[i];
+    const [bx, bz] = clip[(i + 1) % clip.length];
+    const side = ([x, z]) => orient * ((bx - ax) * (z - az) - (bz - az) * (x - ax));
+    const input = out;
+    out = [];
+    for (let j = 0; j < input.length; j++) {
+      const p = input[j];
+      const q = input[(j + 1) % input.length];
+      const sp = side(p);
+      const sq = side(q);
+      if (sp >= 0) out.push(p);
+      if ((sp >= 0) !== (sq >= 0)) {
+        const t = sp / (sp - sq);
+        out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The two plan-view points that realize rectDistance(a, b): [pointOnA, pointOnB].
+ * When the rectangles overlap, both are the same point inside the overlap.
+ */
+export function rectClosestPoints(a, b) {
+  if (rectsOverlap(a, b)) {
+    const overlap = clipConvex(a, b);
+    if (overlap.length) {
+      const c = overlap.reduce(([x, z], [px, pz]) => [x + px / overlap.length, z + pz / overlap.length], [0, 0]);
+      return [c, c];
+    }
+  }
+  let best = { d: Infinity, pa: a[0], pb: b[0] };
+  for (const [P, Q, pIsA] of [
+    [a, b, true],
+    [b, a, false],
+  ]) {
+    for (const pt of P) {
+      for (let i = 0; i < Q.length; i++) {
+        const q = closestOnSeg(pt, Q[i], Q[(i + 1) % Q.length]);
+        const d = Math.hypot(q[0] - pt[0], q[1] - pt[1]);
+        if (d < best.d) best = pIsA ? { d, pa: pt, pb: q } : { d, pa: q, pb: pt };
+      }
+    }
+  }
+  return [best.pa, best.pb];
+}
+
+/**
+ * Closest points between two prisms, as world [x, y, z] pairs, plus the gap between them.
+ * The gap is identical to prismGap(a, b): this is the same measurement, with its witnesses.
+ */
+export function prismClosestPoints(a, b) {
+  const [pa, pb] = rectClosestPoints(corners(a), corners(b));
+  let ya;
+  let yb;
+  if (a.y1 < b.y0) [ya, yb] = [a.y1, b.y0];
+  else if (b.y1 < a.y0) [ya, yb] = [a.y0, b.y1];
+  else ya = yb = (Math.max(a.y0, b.y0) + Math.min(a.y1, b.y1)) / 2;
+  return { a: [pa[0], ya, pa[1]], b: [pb[0], yb, pb[1]], gap: prismGap(a, b) };
+}
+
+/**
+ * Closest points between two pieces at the given axis positions (min over their collision boxes).
+ * Used to draw the gap in 3D from the same poses and prisms the clearance check uses.
+ */
+export function pieceClosestPoints(show, positions, pieceA, pieceB) {
+  const poses = piecePoses(show, positions);
+  const pa = piecePrisms(pieceA, poses.get(pieceA.id));
+  const pb = piecePrisms(pieceB, poses.get(pieceB.id));
+  let best = null;
+  for (const a of pa) {
+    for (const b of pb) {
+      const g = prismGap(a, b);
+      if (!best || g < best.gap) best = { a, b, gap: g };
+    }
+  }
+  return best ? prismClosestPoints(best.a, best.b) : null;
+}
+
 /** Exact minimum distance between two yaw-rotated prisms. */
 export function prismGap(a, b) {
   const dY = Math.max(0, a.y0 - b.y1, b.y0 - a.y1);

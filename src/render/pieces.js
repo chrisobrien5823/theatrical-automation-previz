@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 
 const WARN = new THREE.Color('#ff2b2b');
-const BOX_LINE = '#ffb020';
+const BOX_LINE = '#8fb3d6'; // steel: amber is reserved for standby
 
 /**
  * @param modelView  ModelView or null

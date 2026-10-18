@@ -20,14 +20,14 @@ export function openImportDialog(app, imported) {
   const body = h('div', { class: 'modal-body' });
   const dlg = h(
     'div',
-    { class: 'modal', role: 'dialog', 'aria-label': 'Import model' },
+    { class: 'modal', role: 'dialog', 'aria-label': 'Import model', onkeydown: (e) => e.key === 'Escape' && (e.stopPropagation(), cancel()) },
     h('h2', {}, `Import “${imported.name}”`),
     body,
     h(
       'div',
       { class: 'modal-actions' },
-      h('button', { class: 'file-btn', onclick: cancel }, 'Cancel'),
-      h('button', { class: 'btn btn-go small', onclick: accept }, 'Import'),
+      h('button', { type: 'button', class: 'file-btn', onclick: cancel }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn btn-go small', onclick: accept }, 'Import'),
     ),
   );
   const overlay = h('div', { class: 'modal-wrap' }, dlg);
@@ -121,4 +121,6 @@ export function openImportDialog(app, imported) {
 
   render();
   preview();
+  // Start on the first setting, so Tab walks the dialog and Escape cancels it.
+  body.querySelector('select')?.focus();
 }
