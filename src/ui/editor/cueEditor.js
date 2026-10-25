@@ -67,7 +67,7 @@ export function renderCueEditor(body, app) {
       h(
         'div',
         { class: 'cue-card-head' },
-        h('span', { class: 'num mono' }, q),
+        h('span', { class: 'num tnum' }, q),
         h('input', { type: 'text', value: c.name ?? '', 'aria-label': `${q} name`, 'data-fk': fk('name'), onchange: (e) => edit((cs) => (cs[ci].name = e.target.value)) }),
         worst
           ? h('span', { class: 'badge warn' }, iconEl('warn'), worst.severity === 'contact' ? 'CONTACT' : formatGap(worst.minGap))

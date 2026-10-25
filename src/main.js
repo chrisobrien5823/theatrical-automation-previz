@@ -1,11 +1,11 @@
 // Bootstrap: project (show JSON + optional model) -> simulator -> scene -> UI -> render loop.
 
-// Self-hosted faces (bundled, so the offline and single-file builds carry them): a condensed
-// engineering sans for engraved legends and transport, and a true mono for readouts.
-import '@fontsource/barlow-condensed/latin-600.css';
-import '@fontsource/barlow-condensed/latin-700.css';
-import '@fontsource/jetbrains-mono/latin-500.css';
-import '@fontsource/jetbrains-mono/latin-700.css';
+// Self-hosted face (bundled, so the offline and single-file builds carry it): Hanken Grotesk
+// for everything, with tabular figures wherever a number changes or lines up.
+import '@fontsource/hanken-grotesk/latin-400.css';
+import '@fontsource/hanken-grotesk/latin-500.css';
+import '@fontsource/hanken-grotesk/latin-600.css';
+import '@fontsource/hanken-grotesk/latin-700.css';
 import './styles.css';
 import demoShow from './shows/demo.json';
 import { loadShow } from './core/show.js';
@@ -610,7 +610,7 @@ function refreshUi() {
   ui.go.disabled = running || !sim.nextCue;
   ui.stop.disabled = sim.state !== 'running';
   const flagged = next && preflight[nextIndex]?.conflicts.length;
-  ui.standby.innerHTML = next ? `<span class="mono">Q${esc(next.id)}</span> ${esc(next.name)}` + (flagged ? ` ${icon('warn', 'preflight conflict')}` : '') : 'End of list';
+  ui.standby.innerHTML = next ? `<span class="tnum">Q${esc(next.id)}</span> ${esc(next.name)}` + (flagged ? ` ${icon('warn', 'preflight conflict')}` : '') : 'End of list';
   ui.standby.classList.toggle('flagged', !!flagged);
   setLamp(ui.standbyLamp, next ? (flagged ? 'clash' : 'standby') : 'off');
 
@@ -640,12 +640,12 @@ function renderCaught() {
   if (!caught) return ui.caught.replaceChildren();
   const { w, more, cueIndex } = caught;
   const cue = show.cues[cueIndex];
-  const gap = w.severity === 'contact' ? 'contact' : `<span class="mono">${formatGap(w.minGap)}</span>`;
+  const gap = w.severity === 'contact' ? 'contact' : `<span class="tnum">${formatGap(w.minGap)}</span>`;
   ui.caught.innerHTML = `
     <span class="lamp" data-state="clash"></span>
     <div class="caught-text">
       <b>Caught in Q${esc(cue.id)}</b>
-      <span>${esc(w.aName)} ↔ ${esc(w.bName)} came within ${gap} at t=<span class="mono">${w.tMin.toFixed(2)} s</span>. Clearance is <span class="mono">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>
+      <span>${esc(w.aName)} ↔ ${esc(w.bName)} came within ${gap} at t=<span class="tnum">${w.tMin.toFixed(2)} s</span>. Clearance is <span class="tnum">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>
     </div>
     <button type="button" class="caught-replay">${icon('replay')}Replay Q${esc(cue.id)}</button>
     <button type="button" class="caught-close" aria-label="Dismiss">${icon('close')}</button>`;
@@ -691,8 +691,8 @@ function refreshHud(worst) {
       ui.alert.hidden = false;
       ui.alert.classList.toggle('contact', worst.severity === 'contact');
       ui.alert.innerHTML =
-        `${icon('warn')}<span>${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="mono">${formatGap(worst.gap)}</span>` +
-        `<span class="alert-limit">of <span class="mono">${formatGap(show.clearance)}</span></span>` +
+        `${icon('warn')}<span>${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="tnum">${formatGap(worst.gap)}</span>` +
+        `<span class="alert-limit">of <span class="tnum">${formatGap(show.clearance)}</span></span>` +
         (hits.length > 1 ? `<span class="alert-more">+${hits.length - 1}</span>` : '');
     }
   } else if (alertKey) {

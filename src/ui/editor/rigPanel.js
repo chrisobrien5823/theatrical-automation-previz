@@ -132,7 +132,7 @@ export function createRigPanel(el, app) {
         'div',
         { class: 'guide-head' },
         h('h2', {}, 'Get started'),
-        h('span', { class: 'guide-count mono' }, `${list.filter((s) => s.done).length}/${list.length}`),
+        h('span', { class: 'guide-count tnum' }, `${list.filter((s) => s.done).length}/${list.length}`),
         h(
           'button',
           {
@@ -492,7 +492,7 @@ export function createRigPanel(el, app) {
     const lo = Number.isFinite(def.min) ? def.min : def.modelPosition - 10;
     const hi = Number.isFinite(def.max) ? def.max : def.modelPosition + 10;
     const digits = def.type === 'rotary' ? 1 : 3;
-    const readout = h('output', { class: 'mono jog-val' }, `${pos.toFixed(digits)} ${u.pos}`);
+    const readout = h('output', { class: 'tnum jog-val' }, `${pos.toFixed(digits)} ${u.pos}`);
     const sel = app.selection.pieceId;
     const dirKey = def.type === 'linear' ? dirName(def.direction) : null;
     const name = a.name ?? a.id;

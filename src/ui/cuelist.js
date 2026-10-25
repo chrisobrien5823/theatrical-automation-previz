@@ -100,10 +100,10 @@ export function createCueList(el, { onSelect, onHint }) {
       if (!p) return; // keep the last known result for cues already run
       const timed = p.duration >= 0.05;
       r.dur.textContent = timed ? `${p.duration.toFixed(1)} s` : 'instant';
-      r.dur.classList.toggle('mono', timed); // mono is for numbers only
+      r.dur.classList.toggle('tnum', timed); // tabular figures are for numbers only
       if (p.conflicts.length) {
         const worst = p.conflicts.reduce((a, b) => (b.minGap < a.minGap ? b : a));
-        r.badge.innerHTML = `${icon('warn')}<span class="mono">${worst.severity === 'contact' ? 'CONTACT' : esc(formatGap(worst.minGap))}</span>`;
+        r.badge.innerHTML = `${icon('warn')}<span class="tnum">${worst.severity === 'contact' ? 'CONTACT' : esc(formatGap(worst.minGap))}</span>`;
         r.flagText.textContent =
           `${worst.aName} ↔ ${worst.bName} at t=${worst.tMin.toFixed(2)} s` + (p.conflicts.length > 1 ? ` (+${p.conflicts.length - 1} more)` : '');
         r.flag.hidden = false;

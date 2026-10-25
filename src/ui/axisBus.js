@@ -17,7 +17,7 @@ export function createAxisBus(el) {
         const item = document.createElement('div');
         item.className = 'bus-axis';
         item.setAttribute('role', 'listitem');
-        item.innerHTML = `<span class="lamp"></span><span class="bus-name">${esc(a.name)}</span><span class="bus-word"></span><span class="bus-pos mono"></span>`;
+        item.innerHTML = `<span class="lamp"></span><span class="bus-name">${esc(a.name)}</span><span class="bus-word"></span><span class="bus-pos tnum"></span>`;
         el.appendChild(item);
         return [a.id, { item, word: item.querySelector('.bus-word'), pos: item.querySelector('.bus-pos'), u: unitOf(a), state: null, text: '' }];
       }),

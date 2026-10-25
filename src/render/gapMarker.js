@@ -23,7 +23,7 @@ export function createGapMarker(view, stageEl) {
   const [ext, line, tickA, tickB, contact] = svg.children;
 
   const label = document.createElement('div');
-  label.className = 'gap-label mono';
+  label.className = 'gap-label tnum';
   label.hidden = true;
   label.setAttribute('aria-hidden', 'true');
   stageEl.append(label);

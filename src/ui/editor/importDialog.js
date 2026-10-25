@@ -16,7 +16,7 @@ export function openImportDialog(app, imported) {
   const s = { unit: guessUnits(imported.scene), upAxis: 'y', origin: 'keep', floor: true };
   const guessed = s.unit;
 
-  const sizeLine = h('p', { class: 'mono size' });
+  const sizeLine = h('p', { class: 'tnum size' });
   const body = h('div', { class: 'modal-body' });
   const dlg = h(
     'div',
