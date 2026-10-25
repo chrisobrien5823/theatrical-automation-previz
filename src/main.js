@@ -678,8 +678,8 @@ function refreshHud(worst) {
     setText(ui.hudTime, `${sim.cueTime.toFixed(2)} / ${sim.cueDuration.toFixed(2)} s`);
     pct = Math.min(100, (100 * sim.cueTime) / (sim.cueDuration || 1));
   } else {
-    const next = sim.nextCue;
-    setText(ui.hudCue, halted ? `Q${halted.id} not at target` : next ? `Standby Q${next.id}` : show.cues.length ? 'End of list' : 'No cues yet');
+    // The next cue is the panel's Standby row; the HUD only says something the panel does not.
+    setText(ui.hudCue, halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet');
     setText(ui.hudTime, '');
   }
   pct = Math.round(pct * 10) / 10;
