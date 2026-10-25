@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 
 const TICK = 7; // px, half-length of the end ticks
+const MIN_LEN = 24; // px, shortest dimension line drawn: a visual floor so a tiny gap is still a visible line (the label keeps the true gap)
+const LEADER = 44; // px, how far above the midpoint the label floats
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export function createGapMarker(view, stageEl) {
@@ -32,6 +34,7 @@ export function createGapMarker(view, stageEl) {
   const b = new THREE.Vector3();
   const pa = new THREE.Vector3();
   const pb = new THREE.Vector3();
+  const pc = new THREE.Vector3();
   let visible = false;
   let touching = false;
   let text = '';
@@ -85,18 +88,34 @@ export function createGapMarker(view, stageEl) {
     for (const el of [line, tickA, tickB]) el.style.display = isContact ? 'none' : '';
     // Label sits off to one side of the line, joined by a short leader.
     const lx = mx;
-    const ly = my - 34;
-    put(ext, mx, my, lx, ly + 10);
+    const ly = my - LEADER;
+    put(ext, mx, my, lx, ly);
     if (isContact) {
       contact.setAttribute('cx', mx.toFixed(1));
       contact.setAttribute('cy', my.toFixed(1));
     } else {
-      const [ux, uy] = len > 0.5 ? [dx / len, dy / len] : [0, 1];
+      let [ux, uy] = len > 0.5 ? [dx / len, dy / len] : [0, 1];
+      let [x1, y1, x2, y2] = [sa.x, sa.y, sb.x, sb.y];
+      if (len < MIN_LEN) {
+        // Floor on the drawn length only. A gap that projects to a few pixels is stretched to MIN_LEN
+        // about its midpoint, along the screen direction of the real gap axis (the label still shows the
+        // measured gap, and contact still collapses to the circle).
+        const g = a.distanceTo(b);
+        if (g > 1e-6) {
+          pc.copy(a).addScaledVector(pb.copy(b).sub(a).normalize(), 0.1);
+          const sc = toScreen(pc, pc, r);
+          const cl = Math.hypot(sc.x - sa.x, sc.y - sa.y);
+          if (!sc.behind && cl > 0.5) [ux, uy] = [(sc.x - sa.x) / cl, (sc.y - sa.y) / cl];
+          if (dx * ux + dy * uy < 0) [ux, uy] = [-ux, -uy];
+        }
+        const h = MIN_LEN / 2;
+        [x1, y1, x2, y2] = [mx - ux * h, my - uy * h, mx + ux * h, my + uy * h];
+      }
       const nx = -uy * TICK;
       const ny = ux * TICK;
-      put(line, sa.x, sa.y, sb.x, sb.y);
-      put(tickA, sa.x - nx, sa.y - ny, sa.x + nx, sa.y + ny);
-      put(tickB, sb.x - nx, sb.y - ny, sb.x + nx, sb.y + ny);
+      put(line, x1, y1, x2, y2);
+      put(tickA, x1 - nx, y1 - ny, x1 + nx, y1 + ny);
+      put(tickB, x2 - nx, y2 - ny, x2 + nx, y2 + ny);
     }
     label.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px) translate(-50%, -100%)`;
   }

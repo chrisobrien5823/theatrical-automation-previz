@@ -42,6 +42,7 @@ const ui = {
   standby: $('standby'),
   progress: $('progressBar'),
   showName: $('showName'),
+  hud: document.querySelector('.hud'),
   hudCue: $('hudCue'),
   hudTime: $('hudTime'),
   lamp: $('statusLamp'),
@@ -677,17 +678,26 @@ function renderCaught() {
 
 let progressShown = -1;
 let alertKey = '';
+let hudStateShown = '';
+let hudContactShown = false;
 function refreshHud(worst) {
   const running = sim.state !== 'idle';
+  // The strip itself changes ground with the state (see .hud[data-state] in styles.css): solid red for a
+  // live clearance conflict, solid amber for a ramped STOP / halted cue, a red-ruled "Caught" rest after.
   let word;
   let lamp;
-  if (hits.length) [word, lamp] = ['Conflict', 'clash'];
-  else if (sim.state === 'stopping') [word, lamp] = ['Stopping', 'standby']; // amber = held, not a clearance problem
-  else if (running) [word, lamp] = ['Running', 'moving'];
-  else if (halted) [word, lamp] = ['Stopped', 'standby'];
-  else [word, lamp] = [mode === 'rig' ? 'Rig' : 'Ready', 'ready'];
+  let hudState;
+  if (hits.length) [word, lamp, hudState] = ['Conflict', 'clash', 'clash'];
+  else if (sim.state === 'stopping') [word, lamp, hudState] = ['Stopping', 'standby', 'stopped']; // amber = held, not a clearance problem
+  else if (running) [word, lamp, hudState] = ['Running', 'moving', 'running'];
+  else if (caught) [word, lamp, hudState] = ['Caught', 'clash', 'caught']; // rests here until the Caught card is dismissed / next GO / RESET
+  else if (halted) [word, lamp, hudState] = ['Stopped', 'standby', 'stopped'];
+  else [word, lamp, hudState] = [mode === 'rig' ? 'Rig' : 'Ready', 'ready', 'ready'];
   setText(ui.stateWord, word);
   setLamp(ui.lamp, lamp);
+  if (hudState !== hudStateShown) ui.hud.dataset.state = hudStateShown = hudState;
+  const contact = hits.length > 0 && worst?.severity === 'contact';
+  if (contact !== hudContactShown) ui.hud.toggleAttribute('data-contact', (hudContactShown = contact));
 
   let pct = 0;
   if (running) {
@@ -697,7 +707,8 @@ function refreshHud(worst) {
     pct = Math.min(100, (100 * sim.cueTime) / (sim.cueDuration || 1));
   } else {
     // The next cue is the panel's Standby row; the HUD only says something the panel does not.
-    setText(ui.hudCue, halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet');
+    const rest = caught ? `Q${show.cues[caught.cueIndex].id}${halted ? ' not at target' : ''}` : halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet';
+    setText(ui.hudCue, rest);
     setText(ui.hudTime, '');
   }
   pct = Math.round(pct * 10) / 10;

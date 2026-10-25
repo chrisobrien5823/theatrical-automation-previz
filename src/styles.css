@@ -32,6 +32,7 @@
   --clr: #ff5a5a;
   --clr-bg: #351820;
   --clr-bg-2: #4a1a24;
+  --clr-ink: #200005; /* text on the solid clash fill (--clr): 6.5:1 */
   --stop: #c8262f;
   --collar: #ffcc00;
   --unlit: #34414f;
@@ -135,6 +136,24 @@ kbd {
   background: var(--overlay); border-bottom: 1px solid var(--rule);
   pointer-events: none;
 }
+/* The strip is the state: it changes ground, not just its lamp. Solid red is a live clearance conflict (the
+   loudest thing on screen); solid amber is a ramped STOP / halted cue; "caught" rests on the deep clash wash
+   with a red rule until the Caught card is dismissed. Ready and running keep the quiet overlay. */
+.hud[data-state='clash'] { background: var(--clr); border-bottom-color: var(--clr-ink); }
+.hud[data-state='stopped'] { background: var(--stby); border-bottom-color: var(--stby-ink); }
+.hud[data-state='caught'] { background: var(--clr-bg-2); border-bottom: 3px solid var(--clr); padding-bottom: 6px; }
+.hud[data-state='clash'] .state-word, .hud[data-state='clash'] #hudCue, .hud[data-state='clash'] #hudTime { color: var(--clr-ink); }
+.hud[data-state='stopped'] .state-word, .hud[data-state='stopped'] #hudCue, .hud[data-state='stopped'] #hudTime { color: var(--stby-ink); }
+.hud[data-state='caught'] .state-word { color: var(--clr); }
+.hud[data-state='clash'] .hud-cue { border-left-color: #20000566; }
+.hud[data-state='stopped'] .hud-cue { border-left-color: #1a120066; }
+/* A lamp cannot be red-on-red or amber-on-amber: on the solid grounds it lights white, ringed in the ink */
+.hud[data-state='clash'] .lamp[data-state] { background: #fff; border-color: var(--clr-ink); }
+.hud[data-state='stopped'] .lamp[data-state] { background: #fff; border-color: var(--stby-ink); }
+@media (prefers-reduced-motion: no-preference) {
+  .hud[data-state='clash'][data-contact] { animation: hud-flash .8s steps(2) infinite; } /* the alert's contact flash, on the strip */
+}
+@keyframes hud-flash { 50% { background: #ff9a9a; } }
 .hud-state { display: flex; align-items: center; gap: 8px; flex: none; }
 .state-word { font: 700 var(--t-state)/1 var(--sans); letter-spacing: -.01em; min-width: 5em; } /* the longest word (Stopping) fits, so the cue beside it never shifts */
 .hud-cue {
@@ -158,8 +177,9 @@ kbd {
 .n-short { display: none; } /* the phone bus shows a short code instead of the name */
 .bus-word { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; flex: none; min-width: 5ch; color: var(--idle-ink); }
 .bus-axis[data-state='moving'] .bus-word { color: var(--move); }
-.bus-axis[data-state='clash'] { background: var(--clr-bg); }
+.bus-axis[data-state='clash'] { background: var(--clr-bg-2); box-shadow: inset 0 3px 0 var(--clr); }
 .bus-axis[data-state='clash'] .bus-word, .bus-axis[data-state='clash'] .bus-name { color: var(--clr); }
+.bus-axis[data-state='clash'] .bus-pos { color: #fff; }
 .bus-pos { flex: none; color: var(--text); font-weight: 500; } /* name, word and position sit together at the cell's left */
 /* The bus cell's name carries its tape swatch, so the swatch and the name read as one label */
 .bus-axis[data-state='moving'] .lamp { --c: var(--move); background: var(--c); border-color: color-mix(in srgb, var(--c) 55%, #fff); }
@@ -221,8 +241,8 @@ kbd {
 .gap-dim .dim-contact { fill: none; stroke: #fff; stroke-width: 2; }
 .gap-label {
   position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;
-  padding: 3px 7px; background: #fff; color: #200005;
-  font-size: var(--t-label); font-weight: 600; white-space: nowrap;
+  padding: 4px 9px; background: #fff; color: var(--clr-ink);
+  font-size: var(--t-title); font-weight: 700; line-height: 1.2; white-space: nowrap;
   box-shadow: 0 0 0 1px var(--clr);
 }
 
@@ -295,7 +315,8 @@ kbd {
 .btn-go { background: var(--go); color: var(--go-ink); font-size: var(--t-display); min-height: 76px; }
 .btn-go:not(:disabled):hover { background: #4ce489; }
 .btn-go:not(:disabled):active { background: #2cc46a; }
-.btn-go:disabled { background: var(--go-unlit); color: #7fae92; box-shadow: inset 0 0 0 1px #2f6a47; }
+/* While a cue runs, GO is an unlit key, not the biggest green block on screen: STOP is the live control */
+.btn-go:disabled { background: #14241c; color: #6a947b; box-shadow: inset 0 0 0 1px #24402f; font-size: var(--t-state); font-weight: 600; }
 
 /* STOP lives in a yellow e-stop collar */
 .estop { display: flex; padding: 4px; background: var(--collar); }
