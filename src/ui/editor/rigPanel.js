@@ -22,6 +22,8 @@ export function createRigPanel(el, app) {
   let filter = '';
   let jogged = false;
   let guideHidden = readGuideHidden();
+  let guideAll = false; // past step 1 the guide shows only the next step, so the piece panel stays in view
+  let selKey = null; // last selection a render scrolled to
   const expanded = new Set(['']);
   const openSetups = new Set(); // axis ids whose Setup section is open
   const scrollTops = {};
@@ -90,6 +92,10 @@ export function createRigPanel(el, app) {
       ),
     );
     body.scrollTop = scrollTops[tab] ?? 0;
+    // A new selection brings its panel into view: on a short window the list can push it below the fold.
+    const key = `${app.selection.path ?? ''}|${app.selection.pieceId ?? ''}`;
+    if (tab === 'model' && key !== selKey && key !== '|') body.querySelector('.inspector')?.scrollIntoView({ block: 'nearest' });
+    selKey = key;
 
     if (active && !el.contains(document.activeElement)) {
       const next = (focusKey && el.querySelector(`[data-fk="${CSS.escape(focusKey)}"]`)) || [...el.querySelectorAll(FOCUSABLE)][focusIndex];
@@ -125,6 +131,7 @@ export function createRigPanel(el, app) {
     const list = steps();
     const next = list.findIndex((s) => !s.done);
     if (next < 0 || guideHidden) return null;
+    const compact = next > 0 && !guideAll;
     return h(
       'section',
       { class: 'guide', 'aria-label': 'Get started' },
@@ -133,6 +140,22 @@ export function createRigPanel(el, app) {
         { class: 'guide-head' },
         h('h2', {}, 'Get started'),
         h('span', { class: 'guide-count tnum' }, `${list.filter((s) => s.done).length}/${list.length}`),
+        next > 0
+          ? h(
+              'button',
+              {
+                type: 'button',
+                class: 'link',
+                'data-fk': 'guide:all',
+                'aria-expanded': String(!compact),
+                onclick: () => {
+                  guideAll = !guideAll;
+                  rerender();
+                },
+              },
+              compact ? 'All steps' : 'Fewer',
+            )
+          : null,
         h(
           'button',
           {
@@ -152,7 +175,7 @@ export function createRigPanel(el, app) {
         'ol',
         { class: 'guide-steps' },
         list.map((s, i) =>
-          h(
+          compact && i !== next ? null : h(
             'li',
             { class: s.done ? 'done' : i === next ? 'next' : '' },
             h('span', { class: 'guide-mark', 'aria-hidden': 'true' }, s.done ? iconEl('check') : String(i + 1)),

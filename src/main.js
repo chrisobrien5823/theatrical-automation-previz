@@ -484,6 +484,7 @@ function setMode(m) {
     m = 'run';
   }
   mode = m;
+  document.getElementById('app').dataset.mode = m;
   if (m === 'rig' && caught) {
     caught = null; // the Run-mode result card doesn't belong over editing
     renderCaught();
