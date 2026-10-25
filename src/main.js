@@ -61,16 +61,32 @@ const gapMarker = createGapMarker(view, $('stage'));
 const axisBus = createAxisBus($('axisBus'));
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-// Keep the camera's aim in the part of the stage the overlays leave clear. On a phone the conflict
-// alert docks under the axis bus, so room is reserved for it at the top; on a laptop it sits low.
+// Keep the camera's aim in the part of the stage the overlays leave clear. On a phone everything that
+// covers the stage is docked at the top (HUD, axis bus, then one bar for the conflict alert / Caught
+// card), the camera control lives in the panel footer, and the bottom of the stage is free. On a laptop
+// the alert sits low and the camera control sits bottom-left.
 const phoneLayout = window.matchMedia('(max-width: 820px)');
-function updateViewInsets() {
-  const top = document.querySelector('.stage-top').offsetHeight;
-  $('stage').style.setProperty('--stage-top-h', `${top}px`);
-  const camsEl = $('cams');
-  const cams = camsEl.offsetHeight + 24; // the control plus its margin and some air above it
-  view.setInsets(top + (phoneLayout.matches ? 48 : 0), cams + (phoneLayout.matches ? 0 : 52));
+const camsEl = $('cams');
+const camsHome = $('stage');
+function placeCams() {
+  const dest = phoneLayout.matches ? document.querySelector('.panel-foot') : camsHome;
+  if (camsEl.parentElement !== dest) dest.appendChild(camsEl);
 }
+function updateViewInsets() {
+  placeCams();
+  const top = document.querySelector('.stage-top').getBoundingClientRect().height;
+  $('stage').style.setProperty('--stage-top-h', `${top}px`);
+  if (phoneLayout.matches) {
+    // The docked bar has a fixed slot (--dock-h) whether or not it is showing, so the aim does not jump
+    // when a conflict opens; measure it when it is up, otherwise read the slot.
+    const msgs = document.querySelector('.stage-msgs');
+    const slot = msgs.offsetHeight || parseFloat(getComputedStyle(msgs).getPropertyValue('--dock-h')) || 0;
+    view.setInsets(top + slot, 16);
+  } else {
+    view.setInsets(top, camsEl.offsetHeight + 24 + 52); // the control plus its margin, and room for the alert above it
+  }
+}
+placeCams(); // right away, not on the first observer tick: the stage must not paint with the control over it
 new ResizeObserver(updateViewInsets).observe(document.querySelector('.stage-top'));
 phoneLayout.addEventListener('change', updateViewInsets);
 const cueList = createCueList($('cueList'), {
@@ -642,13 +658,15 @@ function renderCaught() {
   const { w, more, cueIndex } = caught;
   const cue = show.cues[cueIndex];
   const gap = w.severity === 'contact' ? 'contact' : `<span class="tnum">${formatGap(w.minGap)}</span>`;
+  // Desktop reads the whole sentence; on a phone the .c-long parts drop out and one line is left:
+  // pair, gap, time (the sentence is in the Log tab and the live region).
   ui.caught.innerHTML = `
     <span class="lamp" data-state="clash"></span>
     <div class="caught-text">
       <b>Caught in Q${esc(cue.id)}</b>
-      <span>${esc(w.aName)} ↔ ${esc(w.bName)} came within ${gap} at t=<span class="tnum">${w.tMin.toFixed(2)} s</span>. Clearance is <span class="tnum">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>
+      <span class="c-line"><span class="c-pair">${esc(w.aName)} ↔ ${esc(w.bName)}</span><span class="c-long"> came within </span>${gap}<span class="c-when"><span class="c-long"> at </span>t=<span class="tnum">${w.tMin.toFixed(2)} s</span></span><span class="c-long">. Clearance is <span class="tnum">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>${more ? `<span class="c-more" aria-hidden="true">+${more}</span>` : ''}</span>
     </div>
-    <button type="button" class="caught-replay">${icon('replay')}Replay Q${esc(cue.id)}</button>
+    <button type="button" class="caught-replay" aria-label="Replay Q${esc(cue.id)}">${icon('replay')}<span>Replay<span class="rq"> Q${esc(cue.id)}</span></span></button>
     <button type="button" class="caught-close" aria-label="Dismiss">${icon('close')}</button>`;
   ui.caught.querySelector('.caught-replay').addEventListener('click', replayCaught);
   ui.caught.querySelector('.caught-close').addEventListener('click', () => {
@@ -692,7 +710,7 @@ function refreshHud(worst) {
       ui.alert.hidden = false;
       ui.alert.classList.toggle('contact', worst.severity === 'contact');
       ui.alert.innerHTML =
-        `${icon('warn')}<span>${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="tnum">${formatGap(worst.gap)}</span>` +
+        `${icon('warn')}<span class="al-pair">${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="tnum">${formatGap(worst.gap)}</span>` +
         `<span class="alert-limit">of <span class="tnum">${formatGap(show.clearance)}</span></span>` +
         (hits.length > 1 ? `<span class="alert-more">+${hits.length - 1}</span>` : '');
     }

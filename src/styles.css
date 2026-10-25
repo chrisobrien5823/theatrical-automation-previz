@@ -155,6 +155,7 @@ kbd {
 }
 .bus-axis + .bus-axis { border-left: 1px solid var(--rule); }
 .bus-name { color: var(--legend); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.n-short { display: none; } /* the phone bus shows a short code instead of the name */
 .bus-word { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; flex: none; min-width: 5ch; color: var(--idle-ink); }
 .bus-axis[data-state='moving'] .bus-word { color: var(--move); }
 .bus-axis[data-state='clash'] { background: var(--clr-bg); }
@@ -200,6 +201,7 @@ kbd {
 .caught-text { display: flex; flex-direction: column; gap: 2px; font-size: var(--t-body); color: var(--legend); min-width: 0; }
 .caught-text b { color: var(--text); font: 600 var(--t-title)/1.2 var(--sans); letter-spacing: 0; }
 .caught-text .tnum { color: var(--text); }
+.c-more { display: none; }
 .caught-replay {
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
   min-height: 36px; padding: 0 12px;
@@ -520,6 +522,7 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
 
 /* ---------- Phone: portrait ---------- */
 @media (max-width: 820px) {
+  :root { --dock-h: 44px; } /* the one docked bar under the axis bus: conflict alert, then the Caught card, in the same slot */
   #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
   #panel { border-left: 0; border-top: 1px solid var(--rule); max-height: 58dvh; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); gap: 10px; }
   .panel-head { display: none; }
@@ -531,23 +534,54 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
   .keys { display: none; }
   .desktop-only { display: none !important; }
   .hud { padding-left: 12px; padding-right: 12px; }
-  .bus-axis { padding: 5px 8px; gap: 5px; font-size: var(--t-label); }
-  .bus-pos { font-size: var(--t-label); }
-  /* On a phone the stage is short: the alert docks under the axis bus so it never covers the gap */
-  .stage-msgs { left: 0; right: 0; top: var(--stage-top-h, 66px); bottom: auto; }
-  .alert, .caught { width: 100%; border-width: 1px 0; }
   .state-word, .bus-word { min-width: 0; }
-  .stage-msgs .caught { order: 2; }
-  .caught { grid-template-columns: auto 1fr auto; padding: 10px; }
-  .caught-replay { grid-column: 2 / 3; justify-self: start; }
-  .caught-close { grid-row: 1; grid-column: 3; align-self: start; }
-  .alert { font-size: var(--t-label); padding: 7px 10px; gap: 8px; }
+
+  /* Axis bus cell, two lines: the lamp with its word, then the axis's tape, short code and position.
+     Every lamp keeps its word and every position stays visible; the full name is read out, not drawn. */
+  .bus-axis {
+    display: grid; grid-template-columns: 10px auto minmax(0, 1fr); grid-template-areas: 'lamp word word' 'tape name pos';
+    column-gap: 5px; row-gap: 3px; align-items: center; padding: 4px 8px; overflow: hidden; font-size: var(--t-label); line-height: 1.2;
+  }
+  .bus-axis .lamp { grid-area: lamp; }
+  .bus-axis .tape { grid-area: tape; justify-self: center; height: 12px; vertical-align: 0; }
+  .bus-name { grid-area: name; overflow: visible; font-weight: 700; letter-spacing: .04em; }
+  .n-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .n-short { display: inline; }
+  .bus-word { grid-area: word; }
+  .bus-pos { grid-area: pos; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-label); }
+
+  /* One docked bar for the conflict, under the bus: a single row in a fixed slot, so the stage under it
+     does not change size when the alert gives way to the Caught card. The full sentence is in the Log tab. */
+  .stage-msgs { left: 0; right: 0; top: var(--stage-top-h, 80px); bottom: auto; }
+  .alert, .caught { width: 100%; height: var(--dock-h); border-width: 1px 0; }
+  .alert:not([hidden]) + .caught { display: none; } /* a stopped cue can leave both up: the live alert wins */
+  .alert { flex-wrap: nowrap; font-size: var(--t-label); padding: 0 10px; gap: 8px; }
+  .al-pair { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .alert .tnum, .alert-limit, .alert-more { flex: none; white-space: nowrap; }
+  .caught { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 0 10px; padding: 0 0 0 10px; }
+  .caught .lamp { align-self: center; margin-top: 0; }
+  .caught-text { gap: 1px; }
+  .caught-text b { line-height: 1.1; }
+  .c-line { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; font-size: var(--t-label); line-height: 1.2; }
+  .c-long { display: none; }
+  .c-pair { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .c-line > .tnum, .c-when { flex: none; }
+  .c-more { display: inline; flex: none; padding: 1px 4px; background: var(--clr); color: #2a0006; font-weight: 600; }
+  .caught-replay, .caught-close { align-self: stretch; height: auto; min-height: var(--dock-h); border: 0; border-left: 1px solid var(--rule); }
+  .caught-replay { padding: 0 12px; background: var(--raised); }
+  .caught-close { width: var(--dock-h); }
+
+  /* The camera control moves off the stage into the panel footer, a full-width row under the thumb */
+  .panel-foot .cams { position: static; flex: 1 1 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .panel-foot .cams button { min-height: 44px; padding: 0; }
 }
 @media (max-width: 420px) {
-  /* Every lamp keeps its word; positions live in the Axes tab at this width */
-  .bus-pos { display: none; }
   .btn-go { min-height: 68px; }
   .btn-stop, .btn-reset { font-size: var(--t-title); letter-spacing: .02em; }
+  .rq { display: none; } /* "Replay" alone: the card already says which cue */
+}
+@media (max-width: 359px) {
+  .c-when { display: none; }
 }
 
 /* ---------- Phone: landscape (short screens) ---------- */

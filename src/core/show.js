@@ -43,6 +43,8 @@ export function loadShow(raw) {
     return {
       id: a.id,
       name: a.name ?? a.id,
+      // Optional 1-5 character code for tight displays (the phone axis bus). Absent: the UI derives one from the name.
+      short: typeof a.short === 'string' && a.short.trim() ? a.short.trim().slice(0, 5) : undefined,
       type: a.type,
       origin: vec3(a.origin),
       direction,

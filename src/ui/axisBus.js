@@ -2,7 +2,10 @@
 // desk. Lit cyan while the axis moves, red while a piece it carries is inside clearance. Every lamp
 // has a word next to it, so the state never depends on colour alone.
 
-import { esc, unitOf } from './format.js';
+import { esc, unitOf, axisCodes } from './format.js';
+
+// On a phone the cell is too narrow for the axis name, so it shows a short code (.n-short) over the
+// position; the full name stays in the DOM (.n-full, visually hidden there) for screen readers.
 
 // "CLASH", never "CLR": on a stage crew's tongue CLR means clear, the opposite.
 const WORD = { moving: 'MOVE', clash: 'CLASH', idle: 'IDLE' };
@@ -12,12 +15,13 @@ export function createAxisBus(el) {
 
   function setShow(show) {
     el.replaceChildren();
+    const codes = axisCodes(show.axes);
     rows = new Map(
-      show.axes.map((a) => {
+      show.axes.map((a, i) => {
         const item = document.createElement('div');
         item.className = 'bus-axis';
         item.setAttribute('role', 'listitem');
-        item.innerHTML = `<span class="lamp"></span><span class="tape" aria-hidden="true"></span><span class="bus-name">${esc(a.name)}</span><span class="bus-word"></span><span class="bus-pos tnum"></span>`;
+        item.innerHTML = `<span class="lamp"></span><span class="tape" aria-hidden="true"></span><span class="bus-name"><span class="n-full">${esc(a.name)}</span><span class="n-short" aria-hidden="true">${esc(codes[i])}</span></span><span class="bus-word"></span><span class="bus-pos tnum"></span>`;
         item.querySelector('.tape').style.setProperty('--tape', a.color);
         el.appendChild(item);
         return [a.id, { item, word: item.querySelector('.bus-word'), pos: item.querySelector('.bus-pos'), u: unitOf(a), state: null, text: '' }];
