@@ -30,7 +30,8 @@ The original 3.5-week plan is done in its first day. Live at https://chrisobrien
 - **Run mode:** demo show (lift, revolve, fly), trapezoid motion, GO / STOP (ramped) / RESET, preflight ⚠ badges, live red highlighting, conflict log, camera presets, 1×/2×/4× speed, phone layout, offline service worker, single-file USB build.
 - **Rig mode (laptop, ≥ 820 px wide):** import `.glb/.gltf/.fbx/.obj` → make pieces (one box or box per part) → lift / fly / wagon / revolve axes (stackable) → jog with live gaps → record and edit cues → Save `.previz` (show + model in one file) + browser autosave.
 - **Real model tested:** the university theater's Vectorworks FBX (`samples/O'Brien P&P 3D Model.fbx`, git-ignored; keep it and its `.previz` saves private).
-- 51 unit tests pass (`npm test`). Details of decisions and gotchas are in claude-mem (project `3D_Previz_Software`) and the open to-dos in its `rock-lititz-demo` work-state list.
+- **UI look pass done (Oct 2026):** one font (Hanken Grotesk, five sizes), flat lamps, spike-tape colours per axis, square-cut controls and opaque ruled stage overlays (no radii, no drop shadows), solid HUD states (red on a clash, amber stopped, a "Caught" rest), a docked 44 px alert/Caught bar and camera control in the panel footer on phones, gaps in mm ("now" vs "min"), plain red STOP. `DESIGN.md` and `.impeccable/design.json` describe it. The animation-smoothness items below are still open.
+- 74 unit tests pass (`npm test`). Details of decisions and gotchas are in claude-mem (project `3D_Previz_Software`) and the open to-dos in its `rock-lititz-demo` work-state list.
 
 Still open before Nov 6: real-phone test, offline test, USB backup check, QR code, AutoCAD stage file (when it arrives; must be 3D), backup video, pitch practice.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T01:12:11.000Z",
+  "generatedAt": "2026-10-25T01:56:45.000Z",
   "title": "Design System: Stage Automation Previz",
   "extensions": {
     "colorMeta": {
@@ -148,6 +148,36 @@
         ],
         "cssVar": "--text"
       },
+      "pure-white": {
+        "role": "neutral",
+        "displayName": "Pure White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(26% 0.000 89.9)",
+          "oklch(37% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(59% 0.000 89.9)",
+          "oklch(70% 0.000 89.9)",
+          "oklch(82% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "placeholder-grey": {
+        "role": "neutral",
+        "displayName": "Placeholder Grey",
+        "canonical": "#7f90a3",
+        "tonalRamp": [
+          "oklch(15% 0.035 251.3)",
+          "oklch(26% 0.035 251.3)",
+          "oklch(37% 0.035 251.3)",
+          "oklch(48% 0.035 251.3)",
+          "oklch(59% 0.035 251.3)",
+          "oklch(70% 0.035 251.3)",
+          "oklch(82% 0.035 251.3)",
+          "oklch(95% 0.035 251.3)"
+        ]
+      },
       "engraved-grey": {
         "role": "neutral",
         "displayName": "Engraved Grey",
@@ -228,9 +258,24 @@
         ],
         "cssVar": "--steel-bg"
       },
+      "selection-wash": {
+        "role": "tertiary",
+        "displayName": "Selection Wash",
+        "canonical": "#6b8fb866",
+        "tonalRamp": [
+          "oklch(15% 0.074 252.2)",
+          "oklch(26% 0.074 252.2)",
+          "oklch(37% 0.074 252.2)",
+          "oklch(48% 0.074 252.2)",
+          "oklch(59% 0.074 252.2)",
+          "oklch(70% 0.074 252.2)",
+          "oklch(82% 0.074 252.2)",
+          "oklch(95% 0.074 252.2)"
+        ]
+      },
       "go-green": {
         "role": "primary",
-        "displayName": "Go Green",
+        "displayName": "GO Green",
         "canonical": "#38d97a",
         "tonalRamp": [
           "oklch(15% 0.187 152.3)",
@@ -246,7 +291,7 @@
       },
       "go-ink": {
         "role": "primary",
-        "displayName": "Go Ink",
+        "displayName": "GO Ink",
         "canonical": "#06160c",
         "tonalRamp": [
           "oklch(15% 0.031 155.3)",
@@ -260,21 +305,68 @@
         ],
         "cssVar": "--go-ink"
       },
+      "go-pressed": {
+        "role": "primary",
+        "displayName": "GO Pressed",
+        "canonical": "#2cc46a",
+        "tonalRamp": [
+          "oklch(15% 0.178 151.7)",
+          "oklch(26% 0.178 151.7)",
+          "oklch(37% 0.178 151.7)",
+          "oklch(48% 0.178 151.7)",
+          "oklch(59% 0.178 151.7)",
+          "oklch(70% 0.178 151.7)",
+          "oklch(82% 0.178 151.7)",
+          "oklch(95% 0.178 151.7)"
+        ]
+      },
       "go-unlit": {
         "role": "primary",
-        "displayName": "Go Unlit",
-        "canonical": "#1b3a2a",
+        "displayName": "GO Unlit",
+        "canonical": "#14241c",
         "tonalRamp": [
-          "oklch(15% 0.047 159.6)",
-          "oklch(26% 0.047 159.6)",
-          "oklch(37% 0.047 159.6)",
-          "oklch(48% 0.047 159.6)",
-          "oklch(59% 0.047 159.6)",
-          "oklch(70% 0.047 159.6)",
-          "oklch(82% 0.047 159.6)",
-          "oklch(95% 0.047 159.6)"
+          "oklch(15% 0.027 161.8)",
+          "oklch(26% 0.027 161.8)",
+          "oklch(37% 0.027 161.8)",
+          "oklch(48% 0.027 161.8)",
+          "oklch(59% 0.027 161.8)",
+          "oklch(70% 0.027 161.8)",
+          "oklch(82% 0.027 161.8)",
+          "oklch(95% 0.027 161.8)"
         ],
         "cssVar": "--go-unlit"
+      },
+      "go-unlit-ink": {
+        "role": "primary",
+        "displayName": "GO Unlit Ink",
+        "canonical": "#6a947b",
+        "tonalRamp": [
+          "oklch(15% 0.060 158.0)",
+          "oklch(26% 0.060 158.0)",
+          "oklch(37% 0.060 158.0)",
+          "oklch(48% 0.060 158.0)",
+          "oklch(59% 0.060 158.0)",
+          "oklch(70% 0.060 158.0)",
+          "oklch(82% 0.060 158.0)",
+          "oklch(95% 0.060 158.0)"
+        ],
+        "cssVar": "--go-unlit-ink"
+      },
+      "go-unlit-rim": {
+        "role": "primary",
+        "displayName": "GO Unlit Rim",
+        "canonical": "#24402f",
+        "tonalRamp": [
+          "oklch(15% 0.046 156.4)",
+          "oklch(26% 0.046 156.4)",
+          "oklch(37% 0.046 156.4)",
+          "oklch(48% 0.046 156.4)",
+          "oklch(59% 0.046 156.4)",
+          "oklch(70% 0.046 156.4)",
+          "oklch(82% 0.046 156.4)",
+          "oklch(95% 0.046 156.4)"
+        ],
+        "cssVar": "--go-unlit-rim"
       },
       "standby-amber": {
         "role": "secondary",
@@ -372,9 +464,103 @@
         ],
         "cssVar": "--clr-bg-2"
       },
-      "estop-red": {
+      "clash-ink": {
         "role": "tertiary",
-        "displayName": "Estop Red",
+        "displayName": "Clash Ink",
+        "canonical": "#200005",
+        "tonalRamp": [
+          "oklch(15% 0.062 13.7)",
+          "oklch(26% 0.062 13.7)",
+          "oklch(37% 0.062 13.7)",
+          "oklch(48% 0.062 13.7)",
+          "oklch(59% 0.062 13.7)",
+          "oklch(70% 0.062 13.7)",
+          "oklch(82% 0.062 13.7)",
+          "oklch(95% 0.062 13.7)"
+        ],
+        "cssVar": "--clr-ink"
+      },
+      "clash-flash": {
+        "role": "tertiary",
+        "displayName": "Clash Flash",
+        "canonical": "#ff9a9a",
+        "tonalRamp": [
+          "oklch(15% 0.121 20.1)",
+          "oklch(26% 0.121 20.1)",
+          "oklch(37% 0.121 20.1)",
+          "oklch(48% 0.121 20.1)",
+          "oklch(59% 0.121 20.1)",
+          "oklch(70% 0.121 20.1)",
+          "oklch(82% 0.121 20.1)",
+          "oklch(95% 0.121 20.1)"
+        ],
+        "cssVar": "--clr-flash"
+      },
+      "clash-pale": {
+        "role": "tertiary",
+        "displayName": "Clash Pale",
+        "canonical": "#ffd6d6",
+        "tonalRamp": [
+          "oklch(15% 0.046 18.0)",
+          "oklch(26% 0.046 18.0)",
+          "oklch(37% 0.046 18.0)",
+          "oklch(48% 0.046 18.0)",
+          "oklch(59% 0.046 18.0)",
+          "oklch(70% 0.046 18.0)",
+          "oklch(82% 0.046 18.0)",
+          "oklch(95% 0.046 18.0)"
+        ],
+        "cssVar": "--clr-pale"
+      },
+      "clash-dim": {
+        "role": "tertiary",
+        "displayName": "Clash Dim",
+        "canonical": "#e7a3a3",
+        "tonalRamp": [
+          "oklch(15% 0.081 19.1)",
+          "oklch(26% 0.081 19.1)",
+          "oklch(37% 0.081 19.1)",
+          "oklch(48% 0.081 19.1)",
+          "oklch(59% 0.081 19.1)",
+          "oklch(70% 0.081 19.1)",
+          "oklch(82% 0.081 19.1)",
+          "oklch(95% 0.081 19.1)"
+        ],
+        "cssVar": "--clr-dim"
+      },
+      "clash-flash-deep": {
+        "role": "tertiary",
+        "displayName": "Clash Flash Deep",
+        "canonical": "#6d141c",
+        "tonalRamp": [
+          "oklch(15% 0.122 21.8)",
+          "oklch(26% 0.122 21.8)",
+          "oklch(37% 0.122 21.8)",
+          "oklch(48% 0.122 21.8)",
+          "oklch(59% 0.122 21.8)",
+          "oklch(70% 0.122 21.8)",
+          "oklch(82% 0.122 21.8)",
+          "oklch(95% 0.122 21.8)"
+        ]
+      },
+      "stop-disabled-ink": {
+        "role": "tertiary",
+        "displayName": "Stop Disabled Ink",
+        "canonical": "#c79ca0",
+        "tonalRamp": [
+          "oklch(15% 0.052 12.2)",
+          "oklch(26% 0.052 12.2)",
+          "oklch(37% 0.052 12.2)",
+          "oklch(48% 0.052 12.2)",
+          "oklch(59% 0.052 12.2)",
+          "oklch(70% 0.052 12.2)",
+          "oklch(82% 0.052 12.2)",
+          "oklch(95% 0.052 12.2)"
+        ]
+      },
+      "stop-red": {
+        "role": "tertiary",
+        "displayName": "Stop Red",
         "canonical": "#c8262f",
         "tonalRamp": [
           "oklch(15% 0.196 24.5)",
@@ -387,22 +573,6 @@
           "oklch(95% 0.196 24.5)"
         ],
         "cssVar": "--stop"
-      },
-      "collar-yellow": {
-        "role": "tertiary",
-        "displayName": "Collar Yellow",
-        "canonical": "#ffcc00",
-        "tonalRamp": [
-          "oklch(15% 0.177 90.4)",
-          "oklch(26% 0.177 90.4)",
-          "oklch(37% 0.177 90.4)",
-          "oklch(48% 0.177 90.4)",
-          "oklch(59% 0.177 90.4)",
-          "oklch(70% 0.177 90.4)",
-          "oklch(82% 0.177 90.4)",
-          "oklch(95% 0.177 90.4)"
-        ],
-        "cssVar": "--collar"
       },
       "unlit-lamp": {
         "role": "neutral",
@@ -534,11 +704,11 @@
       },
       "state": {
         "displayName": "State",
-        "purpose": "HUD state word, STOP and RESET, live axis position."
+        "purpose": "HUD state word, STOP and RESET, live axis position, the unlit GO."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Cue names, axis names, tabs, headings."
+        "purpose": "Cue names, axis names, tabs, HUD cue and time, the gap label, headings."
       },
       "body": {
         "displayName": "Body",
@@ -546,11 +716,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Field labels, hints, timestamps, meta lines."
+        "purpose": "Field labels, hints, timestamps, meta lines, the phone bus and docked bars."
       },
       "lamp-word": {
         "displayName": "Lamp word",
-        "purpose": "STBY, RUN, CLASH, DONE, SKIP, PEND, MOVE, IDLE."
+        "purpose": "STBY, RUN, CLASH, DONE, SKIP, PEND, MOVE, IN POS."
       },
       "legend": {
         "displayName": "Standby legend",
@@ -563,29 +733,29 @@
     },
     "shadows": [
       {
-        "name": "overlay",
-        "value": "0 6px 20px #0009",
-        "purpose": "Alert and toast floating over the 3D stage."
-      },
-      {
-        "name": "card-overlay",
-        "value": "0 10px 30px #000a",
-        "purpose": "The caught card."
-      },
-      {
-        "name": "modal",
-        "value": "0 16px 40px #000c",
-        "purpose": "The import dialog."
-      },
-      {
-        "name": "gap-label",
-        "value": "0 0 0 1px #ff5a5a, 0 2px 8px #0008",
-        "purpose": "Clash-red ring and small drop under the dimension label."
-      },
-      {
         "name": "focus",
-        "value": "outline 2px solid #fff, offset 2px; box-shadow 0 0 0 5px #000c",
+        "value": "outline 2px solid #fff, offset 2px; box-shadow 0 0 0 5px #000c (inset -3px, no halo, in segmented controls, rows and the docked bar)",
         "purpose": "Every focusable element."
+      },
+      {
+        "name": "gap-label-ring",
+        "value": "0 0 0 1px #ff5a5a",
+        "purpose": "A 1px clash-red ring around the white dimension label. A ring, not a shadow: the system has no drop shadows."
+      },
+      {
+        "name": "selected-underline",
+        "value": "inset 0 -2px 0 #c9d6e3",
+        "purpose": "Selected segment and mode switch (tabs use a 2px bottom border)."
+      },
+      {
+        "name": "clash-top-rule",
+        "value": "inset 0 3px 0 #ff5a5a",
+        "purpose": "A clashing axis-bus cell."
+      },
+      {
+        "name": "inset-edge",
+        "value": "inset 0 0 0 1px <colour>",
+        "purpose": "The unlit GO key, warning badges, log rows, the axis limit track."
       }
     ],
     "motion": [
@@ -597,7 +767,7 @@
       {
         "name": "contact-flash",
         "value": "0.8s steps(2) infinite",
-        "purpose": "Alert flash on actual contact (no-preference only)."
+        "purpose": "Alert and HUD-strip flash on actual contact (no-preference only)."
       },
       {
         "name": "hold-to-standby",
@@ -615,6 +785,10 @@
         "value": "max-width: 420px"
       },
       {
+        "name": "tiny-phone",
+        "value": "max-width: 359px"
+      },
+      {
         "name": "phone-landscape",
         "value": "max-height: 520px and min-width: 560px"
       },
@@ -629,93 +803,127 @@
       "name": "GO Button",
       "kind": "button",
       "refersTo": "button-go",
-      "description": "The transport's main control; ready green, 76px tall.",
+      "description": "The transport main control; ready green, square, 76px tall.",
       "html": "<button class=\"ds-go\">GO</button>",
-      "css": ".ds-go{width:200px;min-height:76px;border:0;border-radius:4px;background:#38d97a;color:#06160c;font:700 36px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer;transition:transform .08s,background-color .15s}.ds-go:hover{background:#4ce489}.ds-go:active{background:#2cc46a;transform:translateY(1px)}.ds-go:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}.ds-go:disabled{background:#1b3a2a;color:#7fae92;box-shadow:inset 0 0 0 1px #2f6a47}"
+      "css": ".ds-go{width:200px;min-height:76px;border:0;border-radius:0;background:#38d97a;color:#06160c;font:700 36px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer;transition:transform .08s,background-color .15s}.ds-go:hover{background:#4ce489}.ds-go:active{background:#2cc46a;transform:translateY(1px)}.ds-go:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}"
     },
     {
-      "name": "STOP in E-stop Collar",
+      "name": "GO Button (unlit, while a cue runs)",
+      "kind": "button",
+      "refersTo": "button-go-unlit",
+      "description": "GO becomes an unlit key so STOP is the live control.",
+      "html": "<button class=\"ds-go-unlit\" disabled>GO</button>",
+      "css": ".ds-go-unlit{width:200px;min-height:76px;border:0;border-radius:0;background:#14241c;color:#6a947b;box-shadow:inset 0 0 0 1px #24402f;font:600 22px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em}"
+    },
+    {
+      "name": "STOP Button",
       "kind": "button",
       "refersTo": "button-stop",
-      "description": "Red STOP face inside the yellow collar, the one literal piece of desk hardware.",
-      "html": "<div class=\"ds-collar\"><button class=\"ds-stop\">STOP</button></div>",
-      "css": ".ds-collar{display:flex;padding:4px;border-radius:6px;background:#ffcc00;width:120px}.ds-stop{flex:1;min-height:56px;border:0;border-radius:4px;background:#c8262f;color:#fff;font:700 22px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer}.ds-stop:hover{background:#d93039}.ds-stop:active{transform:translateY(1px)}.ds-stop:focus-visible{outline:2px solid #fff;outline-offset:6px;box-shadow:0 0 0 5px #000c}"
+      "description": "A ramped stop: a plain saturated red key, no collar.",
+      "html": "<button class=\"ds-stop\">STOP</button>",
+      "css": ".ds-stop{width:96px;min-height:56px;border:0;border-radius:0;background:#c8262f;color:#fff;font:700 22px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer;transition:background-color .15s}.ds-stop:hover{background:#d93039}.ds-stop:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}.ds-stop:disabled{background:#3a1a1e;color:#c79ca0;cursor:default}"
     },
     {
       "name": "Reset Button",
       "kind": "button",
       "refersTo": "button-reset",
-      "description": "Quiet transport button on a raised plate.",
+      "description": "Outlined plate, same height as STOP.",
       "html": "<button class=\"ds-reset\">RESET</button>",
-      "css": ".ds-reset{min-height:56px;width:120px;border:1px solid #6b7e94;border-radius:4px;background:#222c38;color:#e6edf3;font:700 22px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer}.ds-reset:hover{background:#2b3745}.ds-reset:active{transform:translateY(1px)}.ds-reset:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}"
+      "css": ".ds-reset{width:96px;min-height:56px;border:1px solid #6b7e94;border-radius:0;background:#222c38;color:#e6edf3;font:700 22px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;cursor:pointer}.ds-reset:hover{background:#2b3745}.ds-reset:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}"
     },
     {
       "name": "Small Button",
       "kind": "button",
       "refersTo": "button-small",
-      "description": "Rig-mode action; primary variant in steel.",
-      "html": "<button class=\"ds-small\">Add axis</button> <button class=\"ds-small ds-primary\">Make piece</button>",
-      "css": ".ds-small{display:inline-flex;align-items:center;min-height:32px;padding:0 11px;border-radius:4px;border:1px solid #6b7e94;background:#2b3745;color:#e6edf3;font:600 14px 'Hanken Grotesk', system-ui, sans-serif;cursor:pointer}.ds-small:hover{background:#344253}.ds-small.ds-primary{background:#c9d6e3;color:#0b1015;border-color:#c9d6e3}.ds-small.ds-primary:hover{background:#e6edf3}.ds-small:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}"
+      "description": "Rig mode actions: 32px, Raised Plate Hi with a Control Edge border; primary is Steel.",
+      "html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-small\">Model positions</button><button class=\"ds-small ds-small-primary\">Record cue</button></div>",
+      "css": ".ds-small{display:inline-flex;align-items:center;min-height:32px;padding:0 11px;border:1px solid #6b7e94;border-radius:0;background:#2b3745;color:#e6edf3;font:600 14px 'Hanken Grotesk', system-ui, sans-serif;cursor:pointer}.ds-small:hover{background:#344253}.ds-small:focus-visible{outline:2px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #000c}.ds-small-primary{background:#c9d6e3;color:#0b1015;border-color:#c9d6e3}.ds-small-primary:hover{background:#e6edf3}"
     },
     {
       "name": "Input Field",
       "kind": "input",
       "refersTo": "input-field",
-      "description": "Recessed well with a control-edge border.",
-      "html": "<input class=\"ds-input\" type=\"text\" value=\"Lift\" aria-label=\"Axis name\">",
-      "css": ".ds-input{background:#0f151c;color:#e6edf3;border:1px solid #6b7e94;border-radius:4px;padding:6px 8px;min-height:32px;width:200px;font:400 14px 'Hanken Grotesk', system-ui, sans-serif}.ds-input:hover{border-color:#a3b3c4}.ds-input:focus-visible{outline:2px solid #fff;outline-offset:0;border-color:transparent}"
+      "description": "Recessed well, 1px Control Edge, square; focus swaps the border for a white outline.",
+      "html": "<input class=\"ds-input\" value=\"Lift DSC\" aria-label=\"Axis name\">",
+      "css": ".ds-input{width:220px;min-height:32px;padding:6px 8px;border:1px solid #6b7e94;border-radius:0;background:#0f151c;color:#e6edf3;font:400 14px 'Hanken Grotesk', system-ui, sans-serif}.ds-input:focus-visible{outline:2px solid #fff;outline-offset:0;border-color:transparent}"
     },
     {
       "name": "Tabs",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Cues / Axes / Log with a 2px steel underline on the selected tab.",
-      "html": "<div class=\"ds-tabs\"><button aria-selected=\"true\">Cues</button><button>Axes</button><button>Log</button></div>",
-      "css": ".ds-tabs{display:flex;gap:2px;border-bottom:1px solid #33404f;width:300px}.ds-tabs button{flex:1;min-height:38px;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:#a3b3c4;font:600 17px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}.ds-tabs button:hover{color:#e6edf3}.ds-tabs button[aria-selected=true]{color:#fff;border-bottom-color:#c9d6e3}.ds-tabs button:focus-visible{outline:2px solid #fff;outline-offset:-3px}"
+      "description": "Cues / Axes / Log: 17px uppercase, selected is white over a 2px Steel underline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" aria-selected=\"true\">Cues</button><button class=\"ds-tab\" aria-selected=\"false\">Axes</button><button class=\"ds-tab\" aria-selected=\"false\">Log</button></div>",
+      "css": ".ds-tabs{display:flex;width:300px;border-bottom:1px solid #33404f}.ds-tab{flex:1;min-height:38px;padding:9px 0;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:#a3b3c4;font:600 17px/1 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}.ds-tab:hover{color:#e6edf3}.ds-tab[aria-selected=true]{color:#fff;border-bottom-color:#c9d6e3}.ds-tab:focus-visible{outline:2px solid #fff;outline-offset:-3px}"
     },
     {
       "name": "Lamp and Word",
       "kind": "custom",
       "refersTo": "lamp",
-      "description": "Flat lamp disc with its mandatory word; no halo.",
-      "html": "<span class=\"ds-lampword\"><i class=\"ds-lamp\" style=\"--c:#ffb020\"></i>STBY</span> <span class=\"ds-lampword\"><i class=\"ds-lamp\" style=\"--c:#4cc3ff\"></i>MOVE</span> <span class=\"ds-lampword\"><i class=\"ds-lamp\" style=\"--c:#ff5a5a\"></i>CLASH</span> <span class=\"ds-lampword\"><i class=\"ds-lamp\"></i>IDLE</span>",
-      "css": ".ds-lampword{display:inline-flex;align-items:center;gap:6px;margin-right:10px;color:#8da0b4;font:700 12px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em}.ds-lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#34414f;border:1px solid #566a80}.ds-lamp[style]{background:var(--c);border-color:color-mix(in srgb,var(--c) 55%,#fff)}"
+      "description": "The signature: a flat 10px disc with a lighter rim, always beside a word.",
+      "html": "<div class=\"ds-lamps\"><span class=\"ds-lw\"><i class=\"ds-lamp\" style=\"--c:#38d97a\"></i>READY</span><span class=\"ds-lw\"><i class=\"ds-lamp\" style=\"--c:#ffb020\"></i>STBY</span><span class=\"ds-lw\"><i class=\"ds-lamp\" style=\"--c:#4cc3ff\"></i>MOVE</span><span class=\"ds-lw\"><i class=\"ds-lamp\" style=\"--c:#ff5a5a\"></i>CLASH</span><span class=\"ds-lw\"><i class=\"ds-lamp\"></i>IN POS</span></div>",
+      "css": ".ds-lamps{display:flex;gap:16px;flex-wrap:wrap;color:#8da0b4;font:700 12px/1 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em}.ds-lw{display:inline-flex;align-items:center;gap:6px}.ds-lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c,#34414f);border:1px solid #566a80}.ds-lamp[style]{border-color:color-mix(in srgb,var(--c) 55%,#fff)}"
     },
     {
       "name": "Axis Bus Cell",
       "kind": "custom",
       "refersTo": "tape-swatch",
-      "description": "One cell per axis: lamp, spike-tape swatch, name, state word, position.",
-      "html": "<div class=\"ds-bus\"><div class=\"ds-cell\"><i class=\"ds-lamp\"></i><i class=\"ds-tape\" style=\"--tape:#e6e2d6\"></i><span class=\"ds-name\">Lift</span><span class=\"ds-word\">IDLE</span><span class=\"ds-pos\">0.0 ft</span></div><div class=\"ds-cell ds-clash\"><i class=\"ds-lamp\" style=\"--c:#ff5a5a\"></i><i class=\"ds-tape\" style=\"--tape:#f074b6\"></i><span class=\"ds-name\">Fly</span><span class=\"ds-word\">CLASH</span><span class=\"ds-pos\">12.4 ft</span></div></div>",
-      "css": ".ds-bus{display:flex;gap:1px;background:#33404f;width:420px;font:400 14px 'Hanken Grotesk', system-ui, sans-serif}.ds-cell{flex:1;display:flex;align-items:center;gap:7px;padding:6px 12px;background:#111921;color:#e6edf3}.ds-clash{background:#351820}.ds-lamp{width:10px;height:10px;border-radius:50%;background:#34414f;border:1px solid #566a80;flex:none}.ds-lamp[style]{background:var(--c);border-color:color-mix(in srgb,var(--c) 55%,#fff)}.ds-tape{width:4px;height:14px;background:var(--tape);flex:none}.ds-name{color:#a3b3c4;font-weight:500}.ds-clash .ds-name,.ds-clash .ds-word{color:#ff5a5a}.ds-word{font:700 12px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;color:#8da0b4}.ds-pos{margin-left:auto;font-weight:500;font-variant-numeric:tabular-nums}"
+      "description": "One cell per axis: lamp, tape swatch, name, state word and position grouped at the left. Shown at rest, moving and clashing.",
+      "html": "<div class=\"ds-bus\"><div class=\"ds-cell\"><i class=\"ds-lamp\"></i><i class=\"ds-tape\" style=\"--tape:#e6e2d6\"></i><span class=\"ds-name\">Lift DSC</span><b class=\"ds-word\">IN POS</b><span class=\"ds-pos\">-1.50 m</span></div><div class=\"ds-cell ds-move\"><i class=\"ds-lamp\" style=\"--c:#4cc3ff\"></i><i class=\"ds-tape\" style=\"--tape:#f074b6\"></i><span class=\"ds-name\">Fly LS 4</span><b class=\"ds-word\">MOVE</b><span class=\"ds-pos\">7.05 m</span></div><div class=\"ds-cell ds-clash\"><i class=\"ds-lamp\" style=\"--c:#ff5a5a\"></i><i class=\"ds-tape\" style=\"--tape:#b48ae6\"></i><span class=\"ds-name\">Revolve</span><b class=\"ds-word\">CLASH</b><span class=\"ds-pos\">41.4 °</span></div></div>",
+      "css": ".ds-bus{display:flex;width:100%;background:#111921;border-bottom:1px solid #33404f;font:400 14px 'Hanken Grotesk', system-ui, sans-serif;color:#e6edf3}.ds-cell{flex:1;display:flex;align-items:center;gap:7px;padding:6px 12px;border-left:1px solid #33404f}.ds-cell:first-child{border-left:0}.ds-lamp{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:var(--c,#34414f);border:1px solid #566a80}.ds-lamp[style]{border-color:color-mix(in srgb,var(--c) 55%,#fff)}.ds-tape{display:inline-block;flex:none;width:4px;height:14px;background:var(--tape)}.ds-name{color:#a3b3c4;font-weight:500;white-space:nowrap}.ds-word{font:700 12px/1 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;color:#8da0b4;white-space:nowrap}.ds-pos{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}.ds-move .ds-word{color:#4cc3ff}.ds-clash{background:#4a1a24;box-shadow:inset 0 3px 0 #ff5a5a}.ds-clash .ds-word,.ds-clash .ds-name{color:#ff5a5a}.ds-clash .ds-pos{color:#fff}"
     },
     {
-      "name": "Cue Row",
+      "name": "HUD Strip (conflict, stopped, caught)",
+      "kind": "custom",
+      "refersTo": "hud-clash",
+      "description": "The strip along the top of the stage changes its whole ground with the state: solid red on a clash, solid amber stopped, deep red Caught.",
+      "html": "<div class=\"ds-hud ds-h-clash\"><i class=\"ds-lamp\"></i><b class=\"ds-w\">Conflict</b><span class=\"ds-c\">Q3 Revolve 90 + header in</span><span class=\"ds-t\">4.45 / 9.50 s</span></div><div class=\"ds-hud ds-h-stop\"><i class=\"ds-lamp\"></i><b class=\"ds-w\">Stopped</b><span class=\"ds-c\">Q3 Revolve 90 + header in</span><span class=\"ds-t\">3.10 / 9.50 s</span></div><div class=\"ds-hud ds-h-caught\"><i class=\"ds-lamp\" style=\"--c:#ff5a5a\"></i><b class=\"ds-w\">Caught</b><span class=\"ds-c\">Q3</span></div>",
+      "css": ".ds-hud{display:flex;align-items:center;gap:16px;width:100%;padding:8px 14px;border-bottom:1px solid #33404f;font:500 17px 'Hanken Grotesk', system-ui, sans-serif;margin-bottom:6px}.ds-w{font:700 22px/1 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:-.01em;min-width:5em}.ds-c,.ds-t{white-space:nowrap}.ds-t{font-variant-numeric:tabular-nums}.ds-lamp{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid #566a80}.ds-h-clash{background:#ff5a5a;color:#200005;border-bottom-color:#200005}.ds-h-clash .ds-lamp{background:#fff;border-color:#200005}.ds-h-stop{background:#ffb020;color:#1a1200;border-bottom-color:#1a1200}.ds-h-stop .ds-lamp{background:#fff;border-color:#1a1200}.ds-h-caught{background:#4a1a24;color:#e6edf3;border-bottom:3px solid #ff5a5a;padding-bottom:6px}.ds-h-caught .ds-w{color:#ff5a5a}.ds-h-caught .ds-lamp{background:#ff5a5a;border-color:#ffb3b3}"
+    },
+    {
+      "name": "Cue Row (conflict)",
       "kind": "card",
       "refersTo": "cue-row-conflict",
-      "description": "Ruled sheet row; the conflict row takes a full-width red band.",
-      "html": "<ul class=\"ds-sheet\"><li class=\"ds-cue\"><span class=\"ds-state\">DONE</span><span class=\"ds-num\">Q1</span><span class=\"ds-cname\">Lift to deck</span></li><li class=\"ds-cue ds-conflict\"><span class=\"ds-state\">CLASH</span><span class=\"ds-num\">Q3</span><span class=\"ds-cname\">Fly in, revolve spin</span></li></ul>",
-      "css": ".ds-sheet{list-style:none;margin:0;padding:0;width:340px;border-top:1px solid #33404f}.ds-cue{display:grid;grid-template-columns:42px 34px 1fr;gap:10px;align-items:baseline;padding:10px 8px;border-bottom:1px solid #33404f;color:#a3b3c4}.ds-cue:hover{background:#ffffff08}.ds-state{font:700 12px 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em;color:#8da0b4}.ds-num{font:600 14px 'Hanken Grotesk', system-ui, sans-serif;font-variant-numeric:tabular-nums}.ds-cname{font:600 17px/1.2 'Hanken Grotesk', system-ui, sans-serif}.ds-conflict{background:#351820;border-top:1px solid #ff5a5a;margin-top:-1px;color:#ff5a5a}.ds-conflict .ds-state{color:#ff5a5a}"
+      "description": "A ruled cue-sheet row; the live conflict row is a full-width Clash Wash band ruled in Clash Red, with the preflight badge and the pair.",
+      "html": "<div class=\"ds-cue\"><div class=\"ds-st\"><i class=\"ds-lamp\"></i><b>CLASH</b></div><span class=\"ds-num\">Q3</span><div><div class=\"ds-cn\">Revolve 90 + header in</div><div class=\"ds-meta\"><span class=\"ds-badge\">min 64 mm</span></div><div class=\"ds-flag\">Wall A ↔ Riser at t=4.58 s</div></div><span class=\"ds-time\">9.5 s</span></div>",
+      "css": ".ds-cue{display:grid;grid-template-columns:42px 34px minmax(0,1fr) auto;gap:3px 10px;align-items:baseline;padding:10px 8px;background:#351820;border-top:1px solid #ff5a5a;border-bottom:1px solid #ff5a5a;color:#e6edf3;font:400 14px 'Hanken Grotesk', system-ui, sans-serif;width:360px}.ds-st{display:flex;flex-direction:column;align-items:center;gap:4px;color:#ff5a5a;font:700 12px/1 'Hanken Grotesk', system-ui, sans-serif;letter-spacing:.04em}.ds-lamp{width:10px;height:10px;border-radius:50%;background:#ff5a5a;border:1px solid color-mix(in srgb,#ff5a5a 55%,#fff)}.ds-num{color:#ff5a5a;font-weight:600;font-variant-numeric:tabular-nums}.ds-cn{font:600 17px/1.2 'Hanken Grotesk', system-ui, sans-serif}.ds-badge{display:inline-block;margin-top:4px;padding:3px 6px;background:#351820;color:#ff5a5a;box-shadow:inset 0 0 0 1px #ff5a5a66;font:600 12px 'Hanken Grotesk', system-ui, sans-serif}.ds-flag{margin-top:4px;color:#ff5a5a;font:600 12px 'Hanken Grotesk', system-ui, sans-serif}.ds-time{color:#a3b3c4;font:400 12px 'Hanken Grotesk', system-ui, sans-serif}"
     },
     {
       "name": "Clearance Alert",
       "kind": "custom",
       "refersTo": "alert-clearance",
-      "description": "Red-washed alert with the live gap; the loudest thing on screen.",
-      "html": "<div class=\"ds-alert\"><b>Q3</b> Fly / Revolve <b class=\"ds-gap\">0.8 in</b></div>",
-      "css": ".ds-alert{display:inline-flex;gap:10px;align-items:center;padding:8px 14px;border-radius:4px;background:#351820;border:1px solid #ff5a5a;color:#ffd6d6;font:500 14px 'Hanken Grotesk', system-ui, sans-serif;box-shadow:0 6px 20px #0009}.ds-gap{font:600 17px 'Hanken Grotesk', system-ui, sans-serif;color:#fff;font-variant-numeric:tabular-nums}"
+      "description": "Clash Wash bar with a 1px red border: the pair, the live gap labelled \"now\", and the clearance setting. Square, opaque, no shadow.",
+      "html": "<div class=\"ds-alert\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"#ff5a5a\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 2 1.5 13.5h13z\"/><path d=\"M8 6.5v3M8 11.6v.1\"/></svg><b>Wall A ↔ Riser</b><span class=\"ds-d\">now</span><span class=\"ds-g\">67 mm</span><span class=\"ds-d\">clearance 150 mm</span></div>",
+      "css": ".ds-alert{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:520px;max-width:100%;padding:8px 14px;background:#351820;border:1px solid #ff5a5a;color:#ffd6d6;font:500 14px 'Hanken Grotesk', system-ui, sans-serif}.ds-d{color:#e7a3a3}.ds-g{color:#fff;font:600 17px 'Hanken Grotesk', system-ui, sans-serif;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Gap Label",
+      "kind": "custom",
+      "refersTo": "gap-label",
+      "description": "The measured gap drawn as a drafting dimension: white label, clash-ink 17px 700, 1px clash-red ring, over a 2px white line with end ticks.",
+      "html": "<div class=\"ds-dim\"><div class=\"ds-gl\">67 mm</div><svg width=\"40\" height=\"64\" viewBox=\"0 0 40 64\" fill=\"none\" stroke=\"#fff\"><path d=\"M20 0v20\" stroke-width=\"1\" stroke-dasharray=\"2 3\"/><path d=\"M20 24v36\" stroke-width=\"2\" stroke-linecap=\"square\"/><path d=\"M14 24h12M14 60h12\" stroke-width=\"2\"/></svg></div>",
+      "css": ".ds-dim{display:flex;flex-direction:column;align-items:center;padding:8px;background:#222c38;width:120px}.ds-gl{padding:4px 9px;background:#fff;color:#200005;font:700 17px/1.2 'Hanken Grotesk', system-ui, sans-serif;white-space:nowrap;box-shadow:0 0 0 1px #ff5a5a;margin-bottom:-12px;position:relative;z-index:1}"
+    },
+    {
+      "name": "Caught Card",
+      "kind": "card",
+      "refersTo": "caught-card",
+      "description": "The result that stays after a cue: red lamp, \"Caught in Q3\", the pair, the minimum gap, Replay and close. Square, ruled in clash red.",
+      "html": "<div class=\"ds-caught\"><i class=\"ds-lamp\"></i><div class=\"ds-ct\"><b>Caught in Q3</b><span>Wall A ↔ Riser min <span class=\"ds-n\">64 mm</span> at t=4.58 s, clearance 150 mm.</span></div><button class=\"ds-replay\">Replay Q3</button><button class=\"ds-x\" aria-label=\"Dismiss\">✕</button></div>",
+      "css": ".ds-caught{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:4px 12px;width:520px;max-width:100%;padding:10px 8px 10px 14px;background:#18202a;border:1px solid #ff5a5a;font:400 14px 'Hanken Grotesk', system-ui, sans-serif;color:#a3b3c4}.ds-lamp{width:10px;height:10px;border-radius:50%;background:#ff5a5a;border:1px solid color-mix(in srgb,#ff5a5a 55%,#fff);align-self:start;margin-top:4px}.ds-ct{display:flex;flex-direction:column;gap:2px}.ds-ct b{color:#e6edf3;font:600 17px/1.2 'Hanken Grotesk', system-ui, sans-serif}.ds-n{color:#e6edf3;font-variant-numeric:tabular-nums}.ds-replay{min-height:36px;padding:0 12px;border:1px solid #6b7e94;background:#222c38;color:#e6edf3;font:600 14px 'Hanken Grotesk', system-ui, sans-serif;cursor:pointer}.ds-replay:hover{background:#2b3745}.ds-replay:focus-visible{outline:2px solid #fff;outline-offset:-3px}.ds-x{width:36px;height:36px;border:0;background:none;color:#a3b3c4;cursor:pointer}.ds-x:hover{color:#e6edf3;background:#222c38}"
     }
   ],
   "narrative": {
     "northStar": "The Status Side of the Desk",
-    "overview": "**Creative North Star: \"The Status Side of the Desk\"**\n\nThe screen reads like the status panel of an automation console. A blue-steel rack-black ground holds slate panels, small legends in a cool grey, and a row of lamps. Every axis and every cue carries a lamp and a word, and the lamp colours are a fixed vocabulary: green ready, amber standby, cyan moving, red clearance. When two pieces come inside clearance, that is the loudest, clearest thing on the screen: red lamps on the axis bus, a red-ruled cue row, a red alert, and a measured white dimension line in the 3D view. After the cue ends, a \"Caught in Q3\" card stays up with a Replay button.\n\nColour has two jobs and they never share a hue. Lamps say what state a thing is in. Spike-tape colours, one per axis, say which axis or piece it is, the way a crew marks a deck with coloured tape. The same tape colour follows an axis from its bus cell to its card to the pieces riding it in the 3D view.\n\nThe density is a working panel's, not a dashboard's. The right column is a fixed 380 px control strip. Rows are ruled, not carded. One family, Hanken Grotesk, sets everything in a five-size scale; numbers use tabular figures so a moving readout never jitters. Controls are ordinary web buttons, tabs and selects with square-shouldered 4 px corners. The world's character comes from the palette, the lamp and the tape, not from simulated hardware chrome. The one physical device it borrows literally is the yellow e-stop collar around STOP.\n\nThe world rejects the category default: a grey dark dashboard with one accent colour and rounded floating cards.",
+    "overview": "The screen reads like the status panel of an automation console. A blue-steel rack-black ground holds slate panels, small legends in a cool grey, and a row of lamps. Every axis and every cue carries a lamp and a word, and the lamp colours are a fixed vocabulary: green ready, amber standby, cyan moving, red clearance. When two pieces come inside clearance, that is the loudest, clearest thing on the screen: the HUD strip itself turns solid red, the clashing axes go red on the bus, the cue row is red-ruled, and a measured white dimension line with its gap in millimetres is drawn in the 3D view. After the cue ends the strip rests on a deep red \"Caught\" state and a \"Caught in Q3\" card stays up with a Replay button until it is dismissed.\n\nColour has two jobs and they never share a hue. Lamps say what state a thing is in. Spike-tape colours, one per axis, say which axis or piece it is, the way a crew marks a deck with coloured tape. The same tape colour follows an axis from its bus cell to its card to the pieces riding it in the 3D view.\n\nThe density is a working panel's, not a dashboard's. The right column is a control strip, 380 px on a laptop and wider on big screens. Rows are ruled, not carded. One family, Hanken Grotesk, sets everything in a five-size scale; numbers use tabular figures so a moving readout never jitters. Everything is cut square: controls, bars, cards and the stage overlays have no radius and no drop shadow, and the only circles are the lamps and the Rig guide's step marks. The world's character comes from the palette, the lamp and the tape, not from simulated hardware chrome. STOP is a ramped stop, not an instant E-STOP, so it is a plain saturated red key with nothing around it.\n\nThe world rejects the category default: a grey dark dashboard with one accent colour and rounded floating cards.",
     "keyCharacteristics": [
-      "Rack-black ground with tonal steps for panels, plates and wells; no decorative gradients.",
+      "Rack-black ground with tonal steps for panels, plates and wells; no decorative gradients and no drop shadows.",
       "Flat lamps (a disc with a lighter rim, no glow) always paired with a short word.",
       "One meaning per lamp colour, everywhere in the app; identity is carried by spike tape, never by lamp colours.",
       "One family (Hanken Grotesk) in five sizes; tabular figures for every number.",
+      "Square-cut everything; hairline rules separate regions.",
+      "The HUD strip changes its whole ground with the state: solid red on a clash, solid amber when stopped, a deep red \"Caught\" rest after.",
       "Ruled cue sheet with full-width state bands.",
-      "The gap is drawn as a drafting dimension in the 3D view, measured from the same data the clearance check uses."
+      "The gap is drawn as a drafting dimension in the 3D view, measured from the same data the clearance check uses, and written in millimetres."
     ],
     "rules": [
       {
@@ -729,13 +937,18 @@
         "section": "colors"
       },
       {
-        "name": "The Collar Rule",
-        "body": "Collar yellow appears only as the ring around STOP. It is the single literal piece of desk hardware in the world.",
+        "name": "The Plain Stop Rule",
+        "body": "STOP is a ramped stop, so it is a plain Stop Red key with a white legend, no collar and no ring. No instant E-STOP control exists in the app; if one is ever added it gets its own treatment, designed then, and STOP does not borrow it.",
         "section": "colors"
       },
       {
         "name": "The Spike Tape Rule",
         "body": "Identity colour comes from the show's tape palette and answers \"which axis or piece?\"; lamp colour answers \"what state?\". Tape appears as a small swatch beside a name or on the piece itself, never as a lamp, a state band, a text colour or a fill behind words. A new axis takes the next free tape colour; never reuse a lamp hue as tape.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink On Solid Rule",
+        "body": "Text on a solid state fill takes that fill's ink (Clash Ink on red, Standby Ink on amber, GO Ink on green), never white or grey, and a lamp on a solid ground of its own colour lights white with an ink ring.",
         "section": "colors"
       },
       {
@@ -745,7 +958,7 @@
       },
       {
         "name": "The Spent Caps Rule",
-        "body": "Tracked uppercase is rationed to the Standby legend, tabs, GO / STOP / RESET and the eight short lamp words. Everything else is mixed case. A new label is mixed case at 12px, not a new engraved legend.",
+        "body": "Tracked uppercase is rationed to the Standby legend, tabs, GO / STOP / RESET and the short lamp words (the camera presets FOH / SL / SR / TOP are also upper case, being codes). Everything else is mixed case. A new label is mixed case at 12px, not a new engraved legend.",
         "section": "typography"
       },
       {
@@ -755,7 +968,7 @@
       },
       {
         "name": "The Tonal Plate Rule",
-        "body": "Panels and cards gain depth by stepping up the neutral ramp, never by a shadow. A shadow means the thing floats over the 3D stage.",
+        "body": "Panels and cards gain depth by stepping up the neutral ramp, never by a shadow. Anything over the 3D stage is solid and ruled.",
         "section": "elevation"
       },
       {
@@ -764,8 +977,18 @@
         "section": "elevation"
       },
       {
+        "name": "The Square Cut Rule",
+        "body": "Everything is cut square. Round means a bulb: the only circles are lamps and the Rig guide's step marks. There is no radius token other than 0 and 50%, and a new component does not get a corner.",
+        "section": "shapes"
+      },
+      {
         "name": "The Lamp-and-Word Rule",
         "body": "A lamp never appears alone. State is never carried by colour only; the word is present at every breakpoint.",
+        "section": "components"
+      },
+      {
+        "name": "The Loudest Strip Rule",
+        "body": "A live conflict is the loudest thing on the screen, and the HUD strip carries it: solid red, not a small lamp on a quiet strip. Nothing else is allowed a solid red ground.",
         "section": "components"
       },
       {
@@ -774,8 +997,18 @@
         "section": "components"
       },
       {
+        "name": "The Live Versus Minimum Rule",
+        "body": "A gap number is always labelled with what it is: \"now\" for the live gap while pieces are moving, \"min\" for the closest approach the check recorded (badges, Caught card, log). Two unlabelled gap numbers never share the screen.",
+        "section": "components"
+      },
+      {
+        "name": "The Millimetre Rule",
+        "body": "Gaps and clearance are shown in millimetres, the unit of a drawing, a Vectorworks model and a tape measure: whole mm from 10 up, one decimal below (6.4 mm), \"CONTACT\" at zero. Metres stay in the data and the show JSON; `formatGap` and `formatClearance` in `src/ui/format.js` are the only places the unit changes.",
+        "section": "components"
+      },
+      {
         "name": "The Measured Line Rule",
-        "body": "Any drawn gap, pose or conflict comes from the same data the clearance check uses. Never draw an approximate or decorative indicator.",
+        "body": "Any drawn gap, pose or conflict comes from the same data the clearance check uses. Never draw an approximate or decorative indicator; the 24px floor stretches only the drawing, never the number.",
         "section": "components"
       }
     ],
@@ -783,24 +1016,28 @@
       "**Do** pair every lamp with a short word, at every breakpoint.",
       "**Do** keep each lamp colour to its one meaning: green ready/GO, amber standby/held/skipped, cyan moving, red clearance.",
       "**Do** carry axis and piece identity in spike-tape colours from the show data, as a small swatch beside a name or on the piece.",
+      "**Do** let a live conflict take the whole HUD strip: solid Clash Red, Clash Ink text.",
+      "**Do** keep the Caught resting state and card up after the cue, until dismissed, the next GO or RESET.",
+      "**Do** write gaps in millimetres and label them \"now\" or \"min\".",
       "**Do** mark selection and the active view with Steel and a 2px Steel underline.",
       "**Do** set every number in Hanken Grotesk with tabular figures.",
       "**Do** separate regions with 1px Hairline Rule and step depth with the neutral ramp.",
-      "**Do** use the white 2px focus ring with its black halo on everything focusable.",
-      "**Do** keep the clearance conflict the loudest thing on screen and keep the caught card up after the cue.",
-      "**Do** keep touch targets at 44px on coarse pointers.",
+      "**Do** cut every control, bar and card square; keep circles for lamps and guide marks.",
+      "**Do** use the white 2px focus ring with its black halo on everything focusable, inset where an edge would clip it.",
+      "**Do** keep touch targets at 44px on coarse pointers, and on the phone dock one bar under the bus.",
       "**Do** stay within the five type sizes (12, 14, 17, 22, 36 px)."
     ],
     "donts": [
       "**Don't** use amber for selection, hover or general warnings; it means standby.",
-      "**Don't** use Collar Yellow anywhere but the ring around STOP.",
+      "**Don't** wrap STOP in a collar or ring, or give it an instant E-STOP look; it is a ramped stop.",
       "**Don't** use Clash Red for anything that is not a clearance conflict.",
       "**Don't** use a lamp colour as spike tape, or tape as a state colour, band or text colour.",
       "**Don't** add a second typeface, or set new tracked-uppercase legends beyond the Standby legend, tabs, transport and lamp words.",
       "**Don't** turn the cue list into cards, or put the main panel content in floating rounded cards.",
-      "**Don't** add glow, halos or coloured shadows to lamps or anything else; shadows are only for things floating over the stage.",
-      "**Don't** draw a gap or conflict indicator that is not computed by the clearance check.",
-      "**Don't** abbreviate the clash word to CLR."
+      "**Don't** add drop shadows, glow, halos or coloured shadows to lamps or anything else; overlays are opaque and ruled.",
+      "**Don't** round a corner, except a lamp and the Rig guide's step marks.",
+      "**Don't** draw a gap or conflict indicator that is not computed by the clearance check, or show a gap without saying whether it is live or minimum.",
+      "**Don't** abbreviate the clash word to CLR, or call an axis at its target IDLE."
     ]
   }
 }

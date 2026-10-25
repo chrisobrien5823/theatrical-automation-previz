@@ -25,7 +25,9 @@
   /* Lamps: each colour has one meaning everywhere */
   --go: #38d97a;
   --go-ink: #06160c;
-  --go-unlit: #1b3a2a;
+  --go-unlit: #14241c; /* GO while a cue runs: an unlit key */
+  --go-unlit-ink: #6a947b; /* 4.7:1 on --go-unlit */
+  --go-unlit-rim: #24402f;
   --stby: #ffb020;
   --stby-ink: #1a1200;
   --move: #4cc3ff;
@@ -33,6 +35,9 @@
   --clr-bg: #351820;
   --clr-bg-2: #4a1a24;
   --clr-ink: #200005; /* text on the solid clash fill (--clr): 6.5:1 */
+  --clr-flash: #ff9a9a; /* the contact flash on the HUD, and the quiet danger controls */
+  --clr-pale: #ffd6d6; /* alert text on the clash wash */
+  --clr-dim: #e7a3a3; /* secondary alert text on the clash wash: 7.8:1 */
   --stop: #c8262f;
   --unlit: #34414f;
   --unlit-rim: #566a80;
@@ -40,7 +45,6 @@
   /* Shape: square-cut. Controls and panels have no radius; only lamps (and the Rig guide marks) are round,
      because a lamp is a physical bulb. Regions are separated by hairline rules, not floating boxes. */
   --r-ctl: 0;
-  --r-panel: 0;
 
   /* Space: tight inside a group, generous between groups */
   --sp-1: 4px;
@@ -152,7 +156,7 @@ kbd {
 @media (prefers-reduced-motion: no-preference) {
   .hud[data-state='clash'][data-contact] { animation: hud-flash .8s steps(2) infinite; } /* the alert's contact flash, on the strip */
 }
-@keyframes hud-flash { 50% { background: #ff9a9a; } }
+@keyframes hud-flash { 50% { background: var(--clr-flash); } }
 .hud-state { display: flex; align-items: center; gap: 8px; flex: none; }
 .state-word { font: 700 var(--t-state)/1 var(--sans); letter-spacing: -.01em; min-width: 5em; } /* the longest word (Stopping) fits, so the cue beside it never shifts */
 .hud-cue {
@@ -195,16 +199,16 @@ kbd {
   pointer-events: auto; width: min(560px, 100%);
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 8px 14px;
-  background: var(--clr-bg); border: 1px solid var(--clr); color: #ffd6d6;
+  background: var(--clr-bg); border: 1px solid var(--clr); color: var(--clr-pale);
   font-weight: 500; font-size: var(--t-body);
 }
 .alert .ico { color: var(--clr); }
 .alert .tnum { font-size: var(--t-title); font-weight: 600; color: #fff; }
 .al-gap { display: inline-flex; align-items: baseline; gap: 5px; }
-.al-now { color: #e7a3a3; font-weight: 500; }
-.alert-limit { color: #e7a3a3; font-weight: 500; }
-.alert-limit .tnum { font-size: var(--t-body); color: #e7a3a3; font-weight: 500; }
-.alert-more { font: 600 var(--t-label)/1 var(--sans); padding: 3px 5px; background: var(--clr); color: #2a0006; }
+.al-now { color: var(--clr-dim); font-weight: 500; }
+.alert-limit { color: var(--clr-dim); font-weight: 500; }
+.alert-limit .tnum { font-size: var(--t-body); color: var(--clr-dim); font-weight: 500; }
+.alert-more { font: 600 var(--t-label)/1 var(--sans); padding: 3px 5px; background: var(--clr); color: var(--clr-ink); }
 .alert.contact { background: var(--clr-bg-2); }
 @media (prefers-reduced-motion: no-preference) {
   .alert.contact { animation: contact-flash .8s steps(2) infinite; }
@@ -231,6 +235,7 @@ kbd {
 .caught-replay:hover { background: var(--raised-2); }
 .caught-close { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: none; color: var(--legend); }
 .caught-close:hover { color: var(--text); background: var(--raised); }
+.caught-replay:focus-visible, .caught-close:focus-visible { outline-offset: -3px; box-shadow: none; }
 @media (prefers-reduced-motion: no-preference) {
   .caught:not([hidden]) { animation: caught-in .35s var(--ease-out); }
 }
@@ -317,7 +322,7 @@ kbd {
 .btn-go:not(:disabled):hover { background: #4ce489; }
 .btn-go:not(:disabled):active { background: #2cc46a; }
 /* While a cue runs, GO is an unlit key, not the biggest green block on screen: STOP is the live control */
-.btn-go:disabled { background: #14241c; color: #6a947b; box-shadow: inset 0 0 0 1px #24402f; font-size: var(--t-state); font-weight: 600; }
+.btn-go:disabled { background: var(--go-unlit); color: var(--go-unlit-ink); box-shadow: inset 0 0 0 1px var(--go-unlit-rim); font-size: var(--t-state); font-weight: 600; }
 
 /* STOP is a ramped stop, not an instant E-STOP, so it is a plain red key: no collar */
 .btn-stop { background: var(--stop); color: #fff; font-size: var(--t-state); }
@@ -338,7 +343,7 @@ kbd {
 .tabs button:hover { color: var(--text); }
 .tabs button[aria-selected='true'] { color: #fff; border-bottom-color: var(--steel); }
 .tabs button:focus-visible { outline-offset: -3px; box-shadow: none; }
-.count { min-width: 18px; padding: 0 5px; background: var(--clr); color: #200005; font: 600 var(--t-label)/18px var(--sans); letter-spacing: 0; }
+.count { min-width: 18px; padding: 0 5px; background: var(--clr); color: var(--clr-ink); font: 600 var(--t-label)/18px var(--sans); letter-spacing: 0; }
 
 .tab { flex: 1; min-height: 0; overflow-y: auto; }
 
@@ -355,9 +360,8 @@ kbd {
 .cue-btn:hover { background: #ffffff08; }
 .cue-btn:focus-visible { outline-offset: -3px; box-shadow: none; }
 .cue .state { grid-row: span 2; display: flex; flex-direction: column; align-items: center; gap: 4px; align-self: start; padding-top: 3px; }
-.state-text { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; color: var(--idle-ink); }
+.state-text { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; color: var(--idle-ink); text-align: center; }
 /* DONE over CLASH: a cue that ran and was caught. Red word only; the row keeps the quiet done ground */
-.state-text { text-align: center; }
 .state-sub { display: block; margin-top: 3px; letter-spacing: .02em; color: var(--clr); }
 .cue .num { font: 600 var(--t-body)/1.3 var(--sans); color: var(--legend); grid-row: span 3; align-self: start; }
 .cue .name { font: 600 var(--t-title)/1.2 var(--sans); letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -498,13 +502,13 @@ kbd {
 .btn-small.primary { background: var(--steel); color: #0b1015; border-color: var(--steel); }
 .btn-small.primary:not(:disabled):hover { background: #e6edf3; }
 .btn-small.big { min-height: 40px; padding: 0 16px; }
-.btn-small.danger { color: #ff9a9a; }
+.btn-small.danger { color: var(--clr-flash); }
 .btn-small:disabled { opacity: .45; }
 .link { background: none; border: 0; padding: 2px 0; color: var(--link); font-size: var(--t-body); text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #7fb8e666; }
 .link:hover { text-decoration-color: var(--link); }
 .icon { display: grid; place-items: center; background: none; border: 1px solid var(--edge); border-radius: var(--r-ctl); width: 32px; height: 32px; color: var(--text); }
 .icon:not(:disabled):hover { background: var(--raised-2); }
-.icon.danger { color: #ff9a9a; }
+.icon.danger { color: var(--clr-flash); }
 .icon:disabled { opacity: .3; }
 
 .axis-card, .cue-card { background: var(--raised); border: 1px solid var(--rule); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -588,7 +592,7 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
   .c-long { display: none; }
   .c-pair { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .c-gap, .c-when { flex: none; }
-  .c-more { display: inline; flex: none; padding: 1px 4px; background: var(--clr); color: #2a0006; font-weight: 600; }
+  .c-more { display: inline; flex: none; padding: 1px 4px; background: var(--clr); color: var(--clr-ink); font-weight: 600; }
   .caught-replay, .caught-close { align-self: stretch; height: auto; min-height: var(--dock-h); border: 0; border-left: 1px solid var(--rule); }
   .caught-replay { padding: 0 12px; background: var(--raised); }
   .caught-close { width: var(--dock-h); }
@@ -622,7 +626,11 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
 
 /* ---------- Touch: thumb-sized targets ---------- */
 @media (pointer: coarse) {
-  .cams button, .file-btn, .panel-foot select, .tabs button, .caught-replay, .caught-close { min-height: 44px; }
+  .cams button, .file-btn, .panel-foot select, .tabs button, .caught-replay, .caught-close,
+  .btn-small, .icon, .mode-switch button, .link.strong, #rigPanel input[type='text'], #rigPanel input[type='number'], #rigPanel input[type='search'], #rigPanel select, .modal select { min-height: 44px; }
+  .icon { min-width: 44px; }
+  .moves .c-x { width: 52px; }
+  .check-row, .tree-row, .jog input[type='range'] { min-height: 44px; }
   .cams button { min-width: 48px; }
   .caught-close { width: 44px; }
 }
