@@ -14,11 +14,12 @@ export function createReadouts(el) {
         const u = unitOf(a);
         div.innerHTML = `
           <div class="axis-head">
-            <span class="axis-name">${esc(a.name)}<span class="mv" hidden>MOVING</span></span>
+            <span class="axis-name"><span class="tape" aria-hidden="true"></span>${esc(a.name)}<span class="mv" hidden>MOVING</span></span>
             <span class="axis-pos"></span>
           </div>
           <div class="axis-sub"><span class="vel"></span><span>${fmtLimit(a.min)} … ${fmtLimit(a.max)} ${u.pos}</span></div>
           <div class="axis-bar"><i></i></div>`;
+        div.querySelector('.tape').style.setProperty('--tape', a.color);
         el.appendChild(div);
         return [
           a.id,

@@ -4,7 +4,7 @@
 import { ModelView } from '../../model/modelView.js';
 import { fitPrism, boxPose, boxesInFrame } from '../../core/fit.js';
 import { preserveFrames, uniqueId, modelPositions } from '../../core/edit.js';
-import { loadShow } from '../../core/show.js';
+import { loadShow, nextTapeColor } from '../../core/show.js';
 import { axisPoses, piecePoses, relative, IDENTITY } from '../../core/rig.js';
 
 const DEG = Math.PI / 180;
@@ -105,6 +105,7 @@ export function createAxisForPiece(raw, kind, pieceId) {
     name: `${short} ${n}`,
     kind,
     type: k.type,
+    color: nextTapeColor(show.axes.map((a) => a.color)),
     origin: [o.x, o.y, o.z].map(round),
     ...(k.direction ? { direction: k.direction } : {}),
     ...(parentId ? { parent: parentId } : {}),

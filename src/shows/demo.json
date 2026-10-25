@@ -5,6 +5,7 @@
     {
       "id": "lift",
       "name": "Lift DSC",
+      "color": "#e6e2d6",
       "type": "linear",
       "origin": [0, 0, 3.3],
       "home": -1.5,
@@ -16,6 +17,7 @@
     {
       "id": "turntable",
       "name": "Revolve",
+      "color": "#b48ae6",
       "type": "rotary",
       "origin": [0, 0, -0.5],
       "home": 0,
@@ -27,6 +29,7 @@
     {
       "id": "fly",
       "name": "Fly LS 4",
+      "color": "#f074b6",
       "type": "linear",
       "origin": [0, 0, -0.5],
       "home": 9.5,
@@ -37,22 +40,22 @@
     }
   ],
   "pieces": [
-    { "id": "deck_us", "name": "Deck", "offset": [0, -0.15, -1.775], "size": [16, 0.3, 8.45], "color": "#2b2b30", "check": false },
-    { "id": "deck_ds", "name": "Deck", "offset": [0, -0.15, 4.575], "size": [16, 0.3, 0.85], "color": "#2b2b30", "check": false },
-    { "id": "deck_sl", "name": "Deck", "offset": [4.525, -0.15, 3.3], "size": [6.95, 0.3, 1.7], "color": "#2b2b30", "check": false },
-    { "id": "deck_sr", "name": "Deck", "offset": [-4.525, -0.15, 3.3], "size": [6.95, 0.3, 1.7], "color": "#2b2b30", "check": false },
-    { "id": "pros_sl", "name": "Proscenium SL", "offset": [7.6, 5, 5.2], "size": [0.8, 10, 0.4], "color": "#1a1a1e", "check": false },
-    { "id": "pros_sr", "name": "Proscenium SR", "offset": [-7.6, 5, 5.2], "size": [0.8, 10, 0.4], "color": "#1a1a1e", "check": false },
+    { "id": "deck_us", "name": "Deck", "offset": [0, -0.15, -1.775], "size": [16, 0.3, 8.45], "color": "#2c3745", "check": false },
+    { "id": "deck_ds", "name": "Deck", "offset": [0, -0.15, 4.575], "size": [16, 0.3, 0.85], "color": "#2c3745", "check": false },
+    { "id": "deck_sl", "name": "Deck", "offset": [4.525, -0.15, 3.3], "size": [6.95, 0.3, 1.7], "color": "#2c3745", "check": false },
+    { "id": "deck_sr", "name": "Deck", "offset": [-4.525, -0.15, 3.3], "size": [6.95, 0.3, 1.7], "color": "#2c3745", "check": false },
+    { "id": "pros_sl", "name": "Proscenium SL", "offset": [7.6, 5, 5.2], "size": [0.8, 10, 0.4], "color": "#1b2430", "check": false },
+    { "id": "pros_sr", "name": "Proscenium SR", "offset": [-7.6, 5, 5.2], "size": [0.8, 10, 0.4], "color": "#1b2430", "check": false },
 
-    { "id": "tt_disc", "name": "Revolve deck", "mount": "turntable", "shape": "cylinder", "offset": [0, 0.1, 0], "size": [5.9, 0.2, 5.9], "color": "#3a3530", "check": false },
+    { "id": "tt_disc", "name": "Revolve deck", "mount": "turntable", "shape": "cylinder", "offset": [0, 0.1, 0], "size": [5.9, 0.2, 5.9], "color": "#3a4655", "check": false },
     { "id": "tt_spike", "name": "Revolve spike", "mount": "turntable", "offset": [0, 0.205, -2.7], "size": [0.4, 0.01, 0.1], "color": "#e8e8e8", "check": false },
-    { "id": "wall", "name": "Wall A", "mount": "turntable", "offset": [0, 2.2, 2.0], "size": [4, 4, 0.3], "color": "#7d6fa3" },
+    { "id": "wall", "name": "Wall A", "mount": "turntable", "offset": [0, 2.2, 2.0], "size": [4, 4, 0.3] },
 
-    { "id": "lift_platform", "name": "Lift platform", "mount": "lift", "offset": [0, -0.1, 0], "size": [2, 0.2, 1.6], "color": "#55555c" },
-    { "id": "riser", "name": "Riser", "mount": "lift", "offset": [0, 0.5, -0.2], "size": [1.5, 1.0, 1.2], "color": "#b08850" },
+    { "id": "lift_platform", "name": "Lift platform", "mount": "lift", "offset": [0, -0.1, 0], "size": [2, 0.2, 1.6], "color": "#566475" },
+    { "id": "riser", "name": "Riser", "mount": "lift", "offset": [0, 0.5, -0.2], "size": [1.5, 1.0, 1.2] },
 
-    { "id": "batten", "name": "Batten LS 4", "mount": "fly", "offset": [0, 0, 0], "size": [9, 0.05, 0.05], "color": "#777777", "check": false },
-    { "id": "header", "name": "Header", "mount": "fly", "offset": [0, -0.6, 0], "size": [6, 1.2, 0.3], "color": "#3f7f7a" }
+    { "id": "batten", "name": "Batten LS 4", "mount": "fly", "offset": [0, 0, 0], "size": [9, 0.05, 0.05], "color": "#76828f", "check": false },
+    { "id": "header", "name": "Header", "mount": "fly", "offset": [0, -0.6, 0], "size": [6, 1.2, 0.3] }
   ],
   "ignorePairs": [],
   "cues": [

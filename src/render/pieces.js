@@ -7,9 +7,10 @@
 // Every piece gets a holder group posed from core poses, so drawing and clearance agree.
 
 import * as THREE from 'three';
+import { SCENE } from './palette.js';
 
 const WARN = new THREE.Color('#ff2b2b');
-const BOX_LINE = '#8fb3d6'; // steel: amber is reserved for standby
+const BOX_LINE = SCENE.boxLine;
 
 /**
  * @param modelView  ModelView or null
@@ -30,7 +31,7 @@ export function createPieces(scene, show, modelView = null, modelPoses = null) {
     const w = b.max.x - b.min.x + 4;
     const d = b.max.z - b.min.z + 4;
     const geom = new THREE.PlaneGeometry(w, d);
-    const mat = new THREE.MeshStandardMaterial({ color: '#2b2b30', roughness: 0.95 });
+    const mat = new THREE.MeshStandardMaterial({ color: SCENE.deck, roughness: 0.95 });
     owned.push(geom, mat);
     const floor = new THREE.Mesh(geom, mat);
     floor.rotation.x = -Math.PI / 2;
@@ -75,7 +76,7 @@ export function createPieces(scene, show, modelView = null, modelPoses = null) {
     if (shape !== 'cylinder' && Math.min(w, h, d) > 0.02) {
       const edges = new THREE.LineSegments(
         new THREE.EdgesGeometry(geom),
-        new THREE.LineBasicMaterial({ color: p.check ? '#e6e6ea' : '#3a3c44', transparent: true, opacity: p.check ? 0.55 : 0.6 }),
+        new THREE.LineBasicMaterial({ color: p.check ? SCENE.edgeChecked : SCENE.edgeStatic, transparent: true, opacity: p.check ? 0.55 : 0.6 }),
       );
       owned.push(edges.geometry, edges.material);
       mesh.add(edges);

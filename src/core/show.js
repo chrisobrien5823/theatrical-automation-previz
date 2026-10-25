@@ -3,6 +3,21 @@
 
 const DEFAULT_CLEARANCE = 0.15;
 
+/**
+ * Spike-tape identity colours: one per axis, so a piece, its bus cell and its Axes card match.
+ * Deliberately none of the four lamp hues (green / amber / cyan / red), which are reserved for state.
+ * Order is the order new axes are given a colour when the show does not name one.
+ */
+export const TAPE_COLORS = ['#e6e2d6', '#b48ae6', '#f074b6', '#7b8df2', '#ee8348', '#c49a6c'];
+
+/** A tape colour not yet used by `used` (hex strings), cycling once all are taken. */
+export function nextTapeColor(used = []) {
+  const taken = new Set(used.map((c) => String(c).toLowerCase()));
+  return TAPE_COLORS.find((c) => !taken.has(c)) ?? TAPE_COLORS[taken.size % TAPE_COLORS.length];
+}
+
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
 export function loadShow(raw) {
   if (!raw || typeof raw !== 'object') throw new Error('Show file must be a JSON object');
   const warnings = [];
@@ -35,6 +50,8 @@ export function loadShow(raw) {
       home,
       // Where this axis sits in an imported model's drawing (pieces were drawn at this position).
       modelPosition: a.modelPosition ?? home,
+      // Spike-tape identity colour. Missing or malformed: take the next one from the palette.
+      color: HEX.test(a.color ?? '') ? a.color : TAPE_COLORS[i % TAPE_COLORS.length],
       min,
       max,
       vMax: a.vMax,
@@ -80,7 +97,8 @@ export function loadShow(raw) {
       boxes,
       node: p.node ?? null, // path of the model node this piece draws (null = drawn as a box)
       yaw: p.yaw ?? 0,
-      color: p.color ?? '#8a8f98',
+      // A piece with no colour of its own takes its axis's tape colour (static pieces stay neutral grey).
+      color: p.color ?? axisById.get(p.mount)?.color ?? '#8a8f98',
       shape: p.shape ?? 'box',
       check: p.check ?? true,
     };

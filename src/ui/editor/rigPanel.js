@@ -482,6 +482,13 @@ export function createRigPanel(el, app) {
     return dirName(def.direction) === 'y' ? 'Vertical' : 'Track';
   }
 
+  /** The axis's spike-tape identity swatch (decorative; the name beside it is the label). */
+  function tapeSwatch(color) {
+    const el = h('span', { class: 'tape', 'aria-hidden': 'true' });
+    el.style.setProperty('--tape', color);
+    return el;
+  }
+
   function axisCard(a, idle) {
     const def = app.show.axes.find((x) => x.id === a.id);
     const u = unitOf(def);
@@ -504,6 +511,7 @@ export function createRigPanel(el, app) {
       h(
         'div',
         { class: 'axis-card-head' },
+        tapeSwatch(def.color),
         h('input', { type: 'text', class: 'axis-title', value: name, 'aria-label': 'Axis name', 'data-fk': fk('name'), onchange: (e) => patch({ name: e.target.value || a.id }) }),
         h('span', { class: 'tag' }, axisKindLabel(a, def)),
       ),

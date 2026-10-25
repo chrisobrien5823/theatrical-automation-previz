@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { SCENE } from './palette.js';
 
 export const CAMERA_PRESETS = {
   FOH: { pos: [0, 6.5, 17], target: [0, 2.2, 0] },
@@ -18,8 +19,8 @@ export function createScene(container) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#090c10');
-  scene.fog = new THREE.Fog('#090c10', 30, 60);
+  scene.background = new THREE.Color(SCENE.ground);
+  scene.fog = new THREE.Fog(SCENE.ground, 30, 60);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -29,7 +30,7 @@ export function createScene(container) {
   controls.maxDistance = 45;
 
   // Lighting: soft fill plus a warm key from FOH and a cool backlight, like a work-light look.
-  scene.add(new THREE.HemisphereLight('#c9d4ff', '#202024', 0.9));
+  scene.add(new THREE.HemisphereLight(SCENE.skyFill, SCENE.groundFill, 0.9));
   const key = new THREE.DirectionalLight('#fff1dd', 1.6);
   key.position.set(6, 14, 12);
   key.castShadow = true;
@@ -43,13 +44,13 @@ export function createScene(container) {
   // Floor of the trap room / pit below the deck, with a grid for scale (1 m squares).
   const pitFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(40, 40),
-    new THREE.MeshStandardMaterial({ color: '#121317', roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: SCENE.pit, roughness: 1 }),
   );
   pitFloor.rotation.x = -Math.PI / 2;
   pitFloor.position.y = -2.2;
   pitFloor.receiveShadow = true;
   scene.add(pitFloor);
-  const grid = new THREE.GridHelper(40, 40, '#2c2f38', '#1d1f26');
+  const grid = new THREE.GridHelper(40, 40, SCENE.gridMajor, SCENE.gridMinor);
   grid.position.y = -2.19;
   scene.add(grid);
 

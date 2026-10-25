@@ -1,36 +1,41 @@
 /* Stage Automation Previz: the status side of an automation desk.
-   Blue-steel rack black, anodized panels, engraved legends, and lamps that always carry a word. */
+   Blue-steel slate panels over a deep ground, engraved legends, and lamps that always carry a word.
+   Colour has two jobs and they never share a hue: lamps (green / amber / cyan / red) say what state a
+   thing is in; spike-tape colours (--tape, from the show data) say which axis or piece it is. */
 
 :root {
   /* Ground and panels */
-  --ground: #090c10;
-  --panel: #10151b;
-  --raised: #171e27;
-  --raised-2: #1d2631;
-  --well: #0b1015;
-  --rule: #232d39; /* decorative hairlines */
-  --edge: #5a6c81; /* control borders, 3:1 on panel */
+  --ground: #0b1016;
+  --panel: #18202a;
+  --raised: #222c38;
+  --raised-2: #2b3745;
+  --well: #0f151c;
+  --rule: #33404f; /* decorative hairlines */
+  --overlay: #111921; /* bars laid over the 3D view (alpha is set where used) */
+  --edge: #6b7e94; /* control borders: 3.9:1 on panel, 3.4:1 on raised */
 
   /* Ink */
   --text: #e6edf3;
-  --legend: #93a4b6;
+  --legend: #a3b3c4;
+  --idle-ink: #8da0b4; /* state words at rest (IDLE, PEND, ...) */
   --link: #7fb8e6;
   --steel: #c9d6e3; /* selection and active-view marks: amber is reserved for standby */
-  --steel-bg: #1f3346;
+  --steel-bg: #2a4560;
 
   /* Lamps: each colour has one meaning everywhere */
   --go: #38d97a;
   --go-ink: #06160c;
-  --go-unlit: #15301f;
+  --go-unlit: #1b3a2a;
   --stby: #ffb020;
   --stby-ink: #1a1200;
   --move: #4cc3ff;
   --clr: #ff5a5a;
-  --clr-bg: #2a1014;
-  --clr-bg-2: #3b1219;
+  --clr-bg: #351820;
+  --clr-bg-2: #4a1a24;
   --stop: #c8262f;
   --collar: #ffcc00;
-  --unlit: #26313d;
+  --unlit: #34414f;
+  --unlit-rim: #566a80;
 
   --r-ctl: 4px;
   --r-panel: 6px;
@@ -63,8 +68,8 @@ button { cursor: pointer; }
 button:disabled { cursor: default; }
 h1, h2, h3 { margin: 0; }
 h2, h3 { font: 600 var(--t-title)/1.2 var(--sans); letter-spacing: 0; }
-::selection { background: #5a7fa366; color: #fff; }
-* { scrollbar-width: thin; scrollbar-color: #2c3a48 transparent; }
+::selection { background: #6b8fb866; color: #fff; }
+* { scrollbar-width: thin; scrollbar-color: #3e4e60 transparent; }
 :focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px #000c; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
@@ -88,8 +93,7 @@ kbd {
 .lamp {
   --c: var(--unlit);
   display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%;
-  background: var(--unlit);
-  box-shadow: inset 0 1px 1px #0008, 0 0 0 1px #00000080;
+  background: var(--unlit); border: 1px solid var(--unlit-rim);
 }
 .lamp[data-state='ready'], .lamp[data-state='go'] { --c: var(--go); }
 .lamp[data-state='standby'] { --c: var(--stby); }
@@ -97,9 +101,11 @@ kbd {
 .lamp[data-state='clash'] { --c: var(--clr); }
 .lamp[data-state]:not([data-state='off']):not([data-state='idle']),
 .lit .lamp {
-  background: var(--c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent), 0 0 10px 1px color-mix(in srgb, var(--c) 40%, transparent);
+  background: var(--c); border-color: color-mix(in srgb, var(--c) 55%, #fff);
 }
+
+/* Spike tape: the identity colour of an axis (and the pieces riding it). Never a state colour. */
+.tape { display: inline-block; flex: none; width: 4px; height: 14px; background: var(--tape, var(--legend)); vertical-align: -2px; }
 
 #app {
   display: grid;
@@ -116,7 +122,7 @@ kbd {
 .hud {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: calc(8px + env(safe-area-inset-top)) 14px 8px;
-  background: #0c1117e8; border-bottom: 1px solid var(--rule);
+  background: #111921e8; border-bottom: 1px solid var(--rule);
   pointer-events: none;
 }
 .hud-state { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -131,17 +137,17 @@ kbd {
 }
 .bus-axis {
   flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 7px;
-  padding: 6px 12px; background: #0c1117d9; font-size: var(--t-body);
+  padding: 6px 12px; background: #111921d9; font-size: var(--t-body);
 }
 .bus-name { color: var(--legend); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.bus-word { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; flex: none; color: #6f8296; }
+.bus-word { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; flex: none; color: var(--idle-ink); }
 .bus-axis[data-state='moving'] .bus-word { color: var(--move); }
-.bus-axis[data-state='clash'] { background: #2a1014e6; }
+.bus-axis[data-state='clash'] { background: #351820e6; }
 .bus-axis[data-state='clash'] .bus-word, .bus-axis[data-state='clash'] .bus-name { color: var(--clr); }
 .bus-pos { margin-left: auto; flex: none; color: var(--text); font-weight: 500; }
-.bus-axis .lamp { width: 8px; height: 8px; }
-.bus-axis[data-state='moving'] .lamp { --c: var(--move); background: var(--c); box-shadow: 0 0 8px 1px color-mix(in srgb, var(--c) 40%, transparent); }
-.bus-axis[data-state='clash'] .lamp { --c: var(--clr); background: var(--c); box-shadow: 0 0 8px 1px color-mix(in srgb, var(--c) 40%, transparent); }
+/* The bus cell's name carries its tape swatch, so the swatch and the name read as one label */
+.bus-axis[data-state='moving'] .lamp { --c: var(--move); background: var(--c); border-color: color-mix(in srgb, var(--c) 55%, #fff); }
+.bus-axis[data-state='clash'] .lamp { --c: var(--clr); background: var(--c); border-color: color-mix(in srgb, var(--c) 55%, #fff); }
 
 /* Messages docked to the bottom of the stage, above the camera control */
 .stage-msgs {
@@ -173,7 +179,7 @@ kbd {
   pointer-events: auto; width: min(560px, 100%);
   display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 4px 12px;
   padding: 10px 8px 10px 14px; border-radius: var(--r-panel);
-  background: #10151bf2; border: 1px solid var(--clr);
+  background: #18202af2; border: 1px solid var(--clr);
   box-shadow: 0 10px 30px #000a;
 }
 .caught .lamp { align-self: start; margin-top: 4px; }
@@ -208,7 +214,7 @@ kbd {
 .cams {
   position: absolute; z-index: 3; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
   display: flex; border: 1px solid var(--edge); border-radius: var(--r-ctl); overflow: hidden;
-  background: #10151be6;
+  background: #18202ae6;
 }
 .cams button {
   min-height: 34px; padding: 0 12px; border: 0; border-right: 1px solid var(--rule);
@@ -222,14 +228,14 @@ kbd {
 .toast {
   position: absolute; z-index: 5; left: 50%; top: calc(84px + env(safe-area-inset-top)); transform: translateX(-50%);
   max-width: calc(100% - 32px); padding: 8px 14px; border-radius: var(--r-ctl);
-  background: #1d2631f5; border: 1px solid var(--edge); font-size: var(--t-body);
+  background: #2b3745f5; border: 1px solid var(--edge); font-size: var(--t-body);
   box-shadow: 0 6px 20px #0009;
 }
 
 .drop-hint #stage::after {
   content: 'Drop a show, a .previz project or a set model to open it'; position: absolute; inset: 12px; z-index: 6;
   display: grid; place-items: center; border: 2px dashed var(--steel); border-radius: var(--r-panel);
-  background: #090c10d9; color: var(--steel); font-weight: 600; font-size: var(--t-title); text-align: center; padding: 24px;
+  background: #0b1016d9; color: var(--steel); font-weight: 600; font-size: var(--t-title); text-align: center; padding: 24px;
 }
 
 /* ---------- Panel ---------- */
@@ -272,7 +278,7 @@ kbd {
 .btn-go { background: var(--go); color: var(--go-ink); font-size: var(--t-display); min-height: 76px; }
 .btn-go:not(:disabled):hover { background: #4ce489; }
 .btn-go:not(:disabled):active { background: #2cc46a; }
-.btn-go:disabled { background: var(--go-unlit); color: #6f9b80; box-shadow: inset 0 0 0 1px #2a5a3b; }
+.btn-go:disabled { background: var(--go-unlit); color: #7fae92; box-shadow: inset 0 0 0 1px #2f6a47; }
 
 /* STOP lives in a yellow e-stop collar */
 .estop { display: flex; padding: 4px; border-radius: 6px; background: var(--collar); }
@@ -313,7 +319,7 @@ kbd {
 .cue-btn:hover { background: #ffffff08; }
 .cue-btn:focus-visible { outline-offset: -3px; box-shadow: none; }
 .cue .state { grid-row: span 2; display: flex; flex-direction: column; align-items: center; gap: 4px; align-self: start; padding-top: 3px; }
-.state-text { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; color: #6f8296; }
+.state-text { font: 700 var(--t-label)/1 var(--sans); letter-spacing: .04em; color: var(--idle-ink); }
 .cue .num { font: 600 var(--t-body)/1.3 var(--sans); color: var(--legend); grid-row: span 3; align-self: start; }
 .cue .name { font: 600 var(--t-title)/1.2 var(--sans); letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cue .meta { display: flex; align-items: center; gap: 6px; font-size: var(--t-label); color: var(--legend); white-space: nowrap; }
@@ -343,8 +349,7 @@ kbd {
 .cue.conflict .lamp { --c: var(--clr); }
 .cue.conflict .state-text, .cue.conflict .num { color: var(--clr); }
 .cue.standby .lamp, .cue.running .lamp, .cue.conflict .lamp {
-  background: var(--c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent), 0 0 10px 1px color-mix(in srgb, var(--c) 40%, transparent);
+  background: var(--c); border-color: color-mix(in srgb, var(--c) 55%, #fff);
 }
 
 .badge { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-label); font-weight: 600; padding: 3px 6px; border-radius: 3px; }
@@ -357,6 +362,7 @@ kbd {
 .axis { background: var(--raised); border-radius: var(--r-ctl); padding: 10px 12px; }
 .axis-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .axis-name { font: 600 var(--t-title)/1.2 var(--sans); letter-spacing: 0; }
+.axis-name .tape { margin-right: 8px; }
 .axis-name .mv { color: var(--move); font: 700 var(--t-label)/1 var(--sans); margin-left: 8px; letter-spacing: .04em; }
 .axis-pos { font-size: var(--t-state); font-weight: 600; }
 .axis-sub { display: flex; justify-content: space-between; color: var(--legend); font-size: var(--t-label); margin-top: 2px; }
@@ -445,7 +451,7 @@ kbd {
   display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px;
   border-radius: var(--r-ctl); border: 1px solid var(--edge); background: var(--raised-2); font-size: var(--t-body); font-weight: 600;
 }
-.btn-small:not(:disabled):hover { background: #243040; }
+.btn-small:not(:disabled):hover { background: #344253; }
 .btn-small .ico { width: 14px; height: 14px; vertical-align: 0; }
 .btn-small.primary { background: var(--steel); color: #0b1015; border-color: var(--steel); }
 .btn-small.primary:not(:disabled):hover { background: #e6edf3; }
@@ -462,6 +468,7 @@ kbd {
 .axis-card, .cue-card { background: var(--raised); border-radius: var(--r-panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .axis-card-head, .cue-card-head { display: flex; align-items: center; gap: 8px; }
 .axis-card-head .axis-title { font-weight: 600; }
+.axis-card-head .tape { height: 22px; }
 .jog { display: flex; align-items: center; gap: 10px; }
 .jog input[type='range'] { flex: 1; min-height: 28px; }
 .jog-val { min-width: 82px; text-align: right; font-size: var(--t-body); font-weight: 600; }
@@ -485,7 +492,7 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
 /* ---------- Modal (import) ---------- */
 .modal-wrap { position: absolute; inset: 0; display: grid; place-items: start center; padding: 92px 16px 16px; pointer-events: none; z-index: 6; }
 .modal {
-  pointer-events: auto; width: min(440px, 100%); background: #10151bf7; border: 1px solid var(--edge); border-radius: var(--r-panel);
+  pointer-events: auto; width: min(440px, 100%); background: #18202af7; border: 1px solid var(--edge); border-radius: var(--r-panel);
   padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 16px 40px #000c;
 }
 .modal-body { display: flex; flex-direction: column; gap: 10px; }
