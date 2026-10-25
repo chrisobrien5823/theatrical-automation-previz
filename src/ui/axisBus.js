@@ -8,7 +8,8 @@ import { esc, unitOf, axisCodes } from './format.js';
 // position; the full name stays in the DOM (.n-full, visually hidden there) for screen readers.
 
 // "CLASH", never "CLR": on a stage crew's tongue CLR means clear, the opposite.
-const WORD = { moving: 'MOVE', clash: 'CLASH', idle: 'IDLE' };
+// "IN POS" is an axis at rest where it was last sent; it says nothing about whether that is the next cue's target.
+const WORD = { moving: 'MOVE', clash: 'CLASH', idle: 'IN POS' };
 
 export function createAxisBus(el) {
   let rows = new Map();

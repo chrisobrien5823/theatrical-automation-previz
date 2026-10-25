@@ -1,5 +1,27 @@
+// Gaps and clearance are metres in the data and in the show JSON; the screen shows millimetres, the
+// unit a drawing, a Vectorworks model and a tape measure all use. Display only: nothing here is stored.
+
+const EPS_MM = 1e-6; // float noise: 0.057 m * 1000 is 56.99999999999999
+
+/** A measured gap in mm: whole mm from 10 up, one decimal below (6.4 mm). */
 export function formatGap(m) {
-  return m <= 1e-6 ? 'CONTACT' : `${m.toFixed(3)} m`;
+  if (m <= 1e-6) return 'CONTACT';
+  const mm = m * 1000 + EPS_MM;
+  const tenths = Math.round(mm * 10) / 10;
+  return tenths < 10 ? `${tenths.toFixed(1)} mm` : `${Math.round(mm)} mm`;
+}
+
+/** A clearance setting in mm: rounded, and a decimal only when it has one (150 mm, 152.5 mm). */
+export function formatClearance(m) {
+  return `${+(m * 1000).toFixed(1)} mm`;
+}
+
+/** The same numbers, spelled out for the screen-reader live region. */
+export function spokenGap(m) {
+  return m <= 1e-6 ? 'contact' : formatGap(m).replace(' mm', ' millimetres');
+}
+export function spokenClearance(m) {
+  return formatClearance(m).replace(' mm', ' millimetres');
 }
 
 export function unitOf(axisDef) {

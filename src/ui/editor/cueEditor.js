@@ -70,7 +70,7 @@ export function renderCueEditor(body, app) {
         h('span', { class: 'num tnum' }, q),
         h('input', { type: 'text', value: c.name ?? '', 'aria-label': `${q} name`, 'data-fk': fk('name'), onchange: (e) => edit((cs) => (cs[ci].name = e.target.value)) }),
         worst
-          ? h('span', { class: 'badge warn' }, iconEl('warn'), worst.severity === 'contact' ? 'CONTACT' : formatGap(worst.minGap))
+          ? h('span', { class: 'badge warn' }, iconEl('warn'), worst.severity === 'contact' ? 'CONTACT' : `min ${formatGap(worst.minGap)}`)
           : pf
             ? h('span', { class: 'badge ok' }, iconEl('check'), h('span', { class: 'sr-only' }, 'clear'))
             : null,

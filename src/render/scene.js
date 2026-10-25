@@ -8,7 +8,7 @@ export const CAMERA_PRESETS = {
   FOH: { pos: [0, 6.5, 17], target: [0, 2.2, 0] },
   SL: { pos: [15, 6, 1.5], target: [0, 2.2, 0] },
   SR: { pos: [-15, 6, 1.5], target: [0, 2.2, 0] },
-  Top: { pos: [0, 22, 0.01], target: [0, 0, 0] },
+  TOP: { pos: [0, 22, 0.01], target: [0, 0, 0] },
 };
 
 export function createScene(container) {

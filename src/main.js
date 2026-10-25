@@ -24,7 +24,7 @@ import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosa
 import { createCueList } from './ui/cuelist.js';
 import { createReadouts } from './ui/readouts.js';
 import { createLog } from './ui/log.js';
-import { formatGap, esc } from './ui/format.js';
+import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './ui/format.js';
 import { icon } from './ui/icons.js';
 import { createAxisBus } from './ui/axisBus.js';
 import { selectTabButton, tabKeydown } from './ui/tabs.js';
@@ -95,12 +95,13 @@ const cueList = createCueList($('cueList'), {
   onHint: () => toast('Hold a cue to put it in standby.'),
 });
 const readouts = createReadouts($('axes'));
-const log = createLog($('log'), $('logCount'), { onJump: (i) => loadStateBefore(i) });
+const log = createLog($('log'), $('logCount'), { onJump: (i) => loadStateBefore(i), clearance: () => show?.clearance ?? null });
 
 let project = { raw: demoShow, source: null };
 let show, sim, pairs, pieces, modelView, tracker, preflight, stateBefore;
 let hits = [];
 let ran = new Set(); // cue indices that actually ran since the last reset (the rest before standby were skipped)
+let clashed = new Set(); // the ones among them that were caught inside clearance (their DONE reads DONE / CLASH)
 let halted = null; // cue that was STOPped mid-move; axes are parked short of its targets until GO / RESET
 let caught = null; // { cueIndex, w }: the worst clearance conflict of the last cue, shown until the next GO / RESET
 let framedThisCue = false; // the camera swings to the first conflict of a cue, once
@@ -231,7 +232,10 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   hits = [];
   halted = null;
   caught = null;
-  if (!keep) ran = new Set();
+  if (!keep) {
+    ran = new Set();
+    clashed = new Set();
+  }
 
   // State of the stage before each cue when the show is run in order from home (for "jump to cue").
   const home = Object.fromEntries(show.axes.map((a) => [a.id, a.home]));
@@ -248,7 +252,7 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
     log.clear();
     if (!quiet) {
       for (const w of result.warnings) log.info(`Show warning: ${w}`);
-      log.info(`Loaded "${show.name}": ${show.axes.length} axes, ${show.pieces.length} pieces, ${show.cues.length} cues, clearance ${show.clearance} m. Checked every 10 ms of show time at any playback speed.`);
+      log.info(`Loaded "${show.name}": ${show.axes.length} axes, ${show.pieces.length} pieces, ${show.cues.length} cues, clearance ${formatClearance(show.clearance)}. Checked every 10 ms of show time at any playback speed.`);
     }
   } else {
     for (const w of result.warnings) toast(w);
@@ -286,6 +290,7 @@ function loadStateBefore(i) {
   caught = null;
   // The stage now looks exactly as if Q1 … Q(i-1) had run in order from home.
   ran = new Set(show.cues.slice(0, i).map((_, k) => k));
+  clashed = new Set();
   log.info(`Loaded the stage as it stands before Q${show.cues[i].id}. GO to replay it.`);
   refreshUi();
 }
@@ -346,6 +351,7 @@ function onSimEvent(ev) {
       halted = null;
       caught = null;
       framedThisCue = false;
+      clashed.delete(show.cues.indexOf(cue)); // a re-run is judged on its own
       log.info(sim.cueDuration >= 0.05 ? `GO Q${cue.id} ${cue.name} (${sim.cueDuration.toFixed(1)} s)` : `GO Q${cue.id} ${cue.name} (instant: axes already in position)`);
       trackHits(checkClearance(show, sim.positions(), pairs), cue, 0);
       break;
@@ -371,6 +377,7 @@ function onSimEvent(ev) {
       halted = null;
       caught = null;
       ran = new Set();
+      clashed = new Set();
       log.info('RESET: all axes home, standby Q' + (show.cues[0]?.id ?? '—'));
       refreshPreflight();
       break;
@@ -396,7 +403,7 @@ function trackHits(stepHits, cue, cueTime) {
   const cueIndex = show.cues.indexOf(cue);
   for (const w of opened) {
     log.conflictOpened(w, cueIndex);
-    announce(`Clearance conflict in Q${w.cueId}: ${w.aName} and ${w.bName} inside ${show.clearance.toFixed(3)} metres.`);
+    announce(`Clearance conflict in Q${w.cueId}: ${w.aName} and ${w.bName} inside the ${spokenClearance(show.clearance)} clearance.`);
     if (!framedThisCue) framedThisCue = frameConflict(w);
   }
   for (const w of closed) log.conflictUpdated(w, true);
@@ -413,8 +420,9 @@ function setCaught(cue) {
   if (!windows.length) return;
   const w = windows.reduce((a, b) => (b.minGap < a.minGap ? b : a));
   caught = { cueIndex: show.cues.indexOf(cue), w, more: windows.length - 1 };
+  clashed.add(caught.cueIndex);
   announce(
-    `Caught in Q${cue.id}: ${w.aName} and ${w.bName} came within ${w.severity === 'contact' ? 'contact' : w.minGap.toFixed(3) + ' metres'} against a clearance of ${show.clearance.toFixed(3)}.`,
+    `Caught in Q${cue.id}: ${w.aName} and ${w.bName} ${w.severity === 'contact' ? 'made contact' : `came within ${spokenGap(w.minGap)}`}. Clearance is ${spokenClearance(show.clearance)}.`,
   );
 }
 
@@ -645,6 +653,7 @@ function refreshUi() {
     standbyIndex: sim.cueIndex,
     runningIndex: running ? show.cues.indexOf(sim.activeCue) : null,
     ran,
+    clashed,
     conflict: running && hits.length > 0,
   });
   renderCaught();
@@ -658,14 +667,15 @@ function renderCaught() {
   if (!caught) return ui.caught.replaceChildren();
   const { w, more, cueIndex } = caught;
   const cue = show.cues[cueIndex];
-  const gap = w.severity === 'contact' ? 'contact' : `<span class="tnum">${formatGap(w.minGap)}</span>`;
+  // The card reports the minimum of the whole window, so it says "min"; the live alert says "now".
+  const gap = w.severity === 'contact' ? 'contact' : `min <span class="tnum">${formatGap(w.minGap)}</span>`;
   // Desktop reads the whole sentence; on a phone the .c-long parts drop out and one line is left:
-  // pair, gap, time (the sentence is in the Log tab and the live region).
+  // pair, min gap, time (the sentence is in the Log tab and the live region).
   ui.caught.innerHTML = `
     <span class="lamp" data-state="clash"></span>
     <div class="caught-text">
       <b>Caught in Q${esc(cue.id)}</b>
-      <span class="c-line"><span class="c-pair">${esc(w.aName)} ↔ ${esc(w.bName)}</span><span class="c-long"> came within </span>${gap}<span class="c-when"><span class="c-long"> at </span>t=<span class="tnum">${w.tMin.toFixed(2)} s</span></span><span class="c-long">. Clearance is <span class="tnum">${formatGap(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>${more ? `<span class="c-more" aria-hidden="true">+${more}</span>` : ''}</span>
+      <span class="c-line"><span class="c-pair">${esc(w.aName)} ↔ ${esc(w.bName)}</span> <span class="c-gap">${gap}</span><span class="c-when"><span class="c-long"> at </span>t=<span class="tnum">${w.tMin.toFixed(2)} s</span></span><span class="c-long">, clearance <span class="tnum">${formatClearance(show.clearance)}</span>.${more ? ` +${more} more in the log.` : ''}</span>${more ? `<span class="c-more" aria-hidden="true">+${more}</span>` : ''}</span>
     </div>
     <button type="button" class="caught-replay" aria-label="Replay Q${esc(cue.id)}">${icon('replay')}<span>Replay<span class="rq"> Q${esc(cue.id)}</span></span></button>
     <button type="button" class="caught-close" aria-label="Dismiss">${icon('close')}</button>`;
@@ -721,8 +731,8 @@ function refreshHud(worst) {
       ui.alert.hidden = false;
       ui.alert.classList.toggle('contact', worst.severity === 'contact');
       ui.alert.innerHTML =
-        `${icon('warn')}<span class="al-pair">${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="tnum">${formatGap(worst.gap)}</span>` +
-        `<span class="alert-limit">of <span class="tnum">${formatGap(show.clearance)}</span></span>` +
+        `${icon('warn')}<span class="al-pair">${esc(worst.a.name)} ↔ ${esc(worst.b.name)}</span><span class="al-gap"><span class="al-now">now</span> <span class="tnum">${formatGap(worst.gap)}</span></span>` +
+        `<span class="alert-limit">clearance <span class="tnum">${formatClearance(show.clearance)}</span></span>` +
         (hits.length > 1 ? `<span class="alert-more">+${hits.length - 1}</span>` : '');
     }
   } else if (alertKey) {

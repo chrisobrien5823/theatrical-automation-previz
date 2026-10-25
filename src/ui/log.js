@@ -1,8 +1,8 @@
 // Conflict / event log. Conflict entries update in place as their window closes (final min gap).
 
-import { formatGap, clockTime, esc } from './format.js';
+import { formatGap, formatClearance, clockTime, esc } from './format.js';
 
-export function createLog(el, countEl, { onJump }) {
+export function createLog(el, countEl, { onJump, clearance = () => null }) {
   let conflictCount = 0;
   const entries = new Map(); // window object -> li
 
@@ -53,9 +53,13 @@ export function createLog(el, countEl, { onJump }) {
 
   function render(w, li, live) {
     const span = live ? `from t=${w.tStart.toFixed(2)}s` : `t=${w.tStart.toFixed(2)}–${w.tEnd.toFixed(2)}s`;
+    // Live entries show the minimum so far; the closed entry shows the final minimum.
+    const clr = clearance();
+    const what = w.severity === 'contact' ? 'CONTACT' : clr == null ? 'Inside clearance' : `Inside ${formatClearance(clr)} clearance`;
+    const min = w.severity === 'contact' ? `at t=${w.tMin.toFixed(2)}s` : `min <span class="gap">${formatGap(w.minGap)}</span> at t=${w.tMin.toFixed(2)}s`;
     li.firstChild.innerHTML =
       `<span class="ts">${li.dataset.ts}</span><b>Q${esc(w.cueId)}</b> · ${esc(w.aName)} ↔ ${esc(w.bName)}<br>` +
-      `${w.severity === 'contact' ? 'CONTACT' : 'Inside clearance'} ${span} · min <span class="gap">${formatGap(w.minGap)}</span> at t=${w.tMin.toFixed(2)}s` +
+      `${what} ${span} · ${min}` +
       (live ? ' …' : '<span class="log-hint">Load the stage before this cue</span>');
   }
 

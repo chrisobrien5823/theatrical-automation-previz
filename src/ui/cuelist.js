@@ -103,7 +103,7 @@ export function createCueList(el, { onSelect, onHint }) {
       r.dur.classList.toggle('tnum', timed); // tabular figures are for numbers only
       if (p.conflicts.length) {
         const worst = p.conflicts.reduce((a, b) => (b.minGap < a.minGap ? b : a));
-        r.badge.innerHTML = `${icon('warn')}<span class="tnum">${worst.severity === 'contact' ? 'CONTACT' : esc(formatGap(worst.minGap))}</span>`;
+        r.badge.innerHTML = `${icon('warn')}<span class="tnum">${worst.severity === 'contact' ? 'CONTACT' : `min ${esc(formatGap(worst.minGap))}`}</span>`;
         r.flagText.textContent =
           `${worst.aName} ↔ ${worst.bName} at t=${worst.tMin.toFixed(2)} s` + (p.conflicts.length > 1 ? ` (+${p.conflicts.length - 1} more)` : '');
         r.flag.hidden = false;
@@ -119,8 +119,9 @@ export function createCueList(el, { onSelect, onHint }) {
    * standbyIndex: cue the next GO takes. runningIndex: cue in motion (or null).
    * ran: Set of cue indices that actually ran since the last reset; earlier cues that didn't are "skipped".
    * conflict: the running cue is inside clearance right now.
+   * clashed: Set of cue indices that ran and were caught inside clearance; their DONE carries a CLASH line.
    */
-  function setState({ standbyIndex, runningIndex, ran, conflict }) {
+  function setState({ standbyIndex, runningIndex, ran, conflict, clashed = new Set() }) {
     const pointer = runningIndex ?? standbyIndex;
     rows.forEach((r, i) => {
       let state = null;
@@ -128,10 +129,15 @@ export function createCueList(el, { onSelect, onHint }) {
       else if (runningIndex == null && i === standbyIndex) state = 'standby';
       else if (i < pointer) state = ran.has(i) ? 'done' : 'skipped';
       else state = 'pending';
-      if (state === r.state) return;
+      const caughtDone = state === 'done' && clashed.has(i);
+      if (state === r.state && caughtDone === r.caughtDone) return;
       r.li.classList.remove('standby', 'running', 'conflict', 'done', 'skipped', 'pending');
       if (state) r.li.classList.add(state);
-      r.stateText.textContent = STATE_LABEL[state] ?? '';
+      r.li.classList.toggle('caught-done', caughtDone);
+      // A cue that ran and was caught reads DONE over CLASH in the state column: it finished, and it was not clean.
+      if (caughtDone) r.stateText.innerHTML = `${STATE_LABEL.done}<span class="state-sub"><span class="sr-only"> · </span>CLASH</span>`;
+      else r.stateText.textContent = STATE_LABEL[state] ?? '';
+      r.caughtDone = caughtDone;
       if (state === 'standby' || state === 'running' || state === 'conflict') r.btn.setAttribute('aria-current', 'step');
       else r.btn.removeAttribute('aria-current');
       r.state = state;
