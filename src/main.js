@@ -774,7 +774,9 @@ function frame(now) {
     if (sim.state === 'idle') simAccumulator = 0;
   }
 
-  const positions = sim.positions();
+  // Draw at the exact frame time, not the last 10 ms step boundary (removes 1-2 / 0-1 step judder).
+  // Clearance tracking above still runs on whole steps, so live and preflight results stay identical.
+  const positions = sim.positionsAt(simAccumulator);
   const hadHits = hits.length > 0;
   hits = checkClearance(show, positions, pairs);
   pieces.update(piecePoses(show, positions));
@@ -790,7 +792,7 @@ function frame(now) {
   const worst = hits.length ? hits.reduce((a, b) => (b.gap < a.gap ? b : a)) : null;
   gapMarker.set(worst && pieceClosestPoints(show, positions, worst.a, worst.b), worst ? formatGap(worst.gap) : '');
   picking.update();
-  const states = sim.axisStates();
+  const states = sim.axisStatesAt(simAccumulator);
   readouts.update(states);
   axisBus.update(states, clashing);
   refreshHud(worst);
