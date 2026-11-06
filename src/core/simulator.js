@@ -190,6 +190,57 @@ export class Simulator {
     return Object.fromEntries([...this.axes].map(([id, ax]) => [id, ax.pos]));
   }
 
+  /**
+   * Read-only lookahead: each axis's state `ahead` seconds past the current step, sampled straight
+   * from the motion profiles. Lets the renderer draw at the exact frame time while the sim (and
+   * clearance tracking) keeps advancing in fixed steps. Does not change any state or fire events.
+   * Meant for small lookaheads (less than one sim step).
+   */
+  sampleAhead(ahead) {
+    const out = new Map();
+    const t = this.cueTime + Math.max(0, ahead);
+    for (const [id, ax] of this.axes) {
+      let s = { pos: ax.pos, vel: ax.vel, acc: ax.acc, moving: !!ax.active };
+      let active = ax.active;
+      if (!active && this.state === 'running' && ahead > 0) {
+        // A delayed move that starts inside the lookahead window.
+        const m = this.pending.find((p) => p.axis === id && p.delay <= t + DONE_EPS);
+        if (m) {
+          const def = this.axisDefs.get(id);
+          const profile = planMove(ax.pos, m.target, { vMax: m.vMax ?? def.vMax, aMax: def.aMax });
+          active = { profile, startTime: m.delay };
+        }
+      }
+      if (active && ahead > 0) {
+        const { profile, startTime } = active;
+        const local = t - startTime;
+        if (local >= profile.duration - DONE_EPS) s = { pos: profile.target, vel: 0, acc: 0, moving: true };
+        else if (local > 0) s = { ...profile.sample(local), moving: true };
+      }
+      out.set(id, s);
+    }
+    return out;
+  }
+
+  /** Axis positions `ahead` seconds past the current step (see sampleAhead). */
+  positionsAt(ahead = 0) {
+    if (this.state === 'idle' || !(ahead > 0)) return this.positions();
+    return Object.fromEntries([...this.sampleAhead(ahead)].map(([id, s]) => [id, s.pos]));
+  }
+
+  /** Like axisStates(), but `ahead` seconds past the current step (see sampleAhead). */
+  axisStatesAt(ahead = 0) {
+    if (this.state === 'idle' || !(ahead > 0)) return this.axisStates();
+    return [...this.sampleAhead(ahead)].map(([id, s]) => ({
+      id,
+      def: this.axisDefs.get(id),
+      pos: s.pos,
+      vel: s.vel,
+      acc: s.acc,
+      moving: s.moving,
+    }));
+  }
+
   axisStates() {
     return [...this.axes].map(([id, ax]) => ({
       id,

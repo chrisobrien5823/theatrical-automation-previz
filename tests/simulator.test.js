@@ -88,3 +88,60 @@ describe('loadShow', () => {
     expect(() => loadShow({ axes: [], cues: [{ id: '1', moves: [{ axis: 'nope', target: 1 }] }] })).toThrow(/unknown axis/);
   });
 });
+
+describe('Simulator lookahead (render between sim steps)', () => {
+  it('positionsAt(ahead) matches stepping that far, without changing state', () => {
+    const a = new Simulator(show);
+    const b = new Simulator(show);
+    a.go();
+    b.go();
+    for (let i = 0; i < 37; i++) a.step(0.01), b.step(0.01);
+    const ahead = 0.0063;
+    const peek = a.positionsAt(ahead);
+    b.step(ahead);
+    expect(peek.x).toBeCloseTo(b.positions().x, 12);
+    expect(a.cueTime).toBeCloseTo(0.37, 12); // unchanged
+    expect(a.axisStatesAt(ahead)[0].vel).toBeCloseTo(b.axisStates()[0].vel, 12);
+  });
+
+  it('is monotonic within a step and lands on the next step exactly', () => {
+    const sim = new Simulator(show);
+    sim.go();
+    for (let i = 0; i < 150; i++) sim.step(0.01);
+    const p0 = sim.positions().x;
+    const mid = sim.positionsAt(0.005).x;
+    const end = sim.positionsAt(0.01).x;
+    expect(mid).toBeGreaterThan(p0);
+    expect(end).toBeGreaterThan(mid);
+    sim.step(0.01);
+    expect(sim.positions().x).toBeCloseTo(end, 12);
+  });
+
+  it('clamps to the target past the end of a move', () => {
+    const sim = new Simulator(show);
+    sim.go();
+    for (let i = 0; i < 599; i++) sim.step(0.01); // 5.99 s of a 6 s move
+    const s = sim.axisStatesAt(0.05)[0];
+    expect(s.pos).toBe(5);
+    expect(s.vel).toBe(0);
+  });
+
+  it('picks up a delayed move that starts inside the lookahead', () => {
+    const sim = new Simulator(show, { positions: { x: 5 }, cueIndex: 1 });
+    sim.go();
+    sim.step(0.995); // move starts at 1 s
+    expect(sim.positions().x).toBe(5);
+    const peek = sim.positionsAt(0.009).x;
+    expect(peek).toBeLessThan(5);
+    sim.step(0.009);
+    expect(sim.positions().x).toBeCloseTo(peek, 12);
+  });
+
+  it('returns current positions when idle or with no lookahead', () => {
+    const sim = new Simulator(show);
+    expect(sim.positionsAt(0.005)).toEqual(sim.positions());
+    sim.go();
+    sim.step(0.5);
+    expect(sim.positionsAt(0)).toEqual(sim.positions());
+  });
+});
