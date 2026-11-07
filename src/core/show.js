@@ -27,6 +27,7 @@ export function loadShow(raw) {
     if (!a.id) errors.push(`axes[${i}] is missing "id"`);
     if (a.type !== 'linear' && a.type !== 'rotary') errors.push(`axis "${a.id}": type must be "linear" or "rotary"`);
     if (!(a.vMax > 0) || !(a.aMax > 0)) errors.push(`axis "${a.id}": vMax and aMax must be > 0`);
+    if (a.jMax !== undefined && a.jMax !== null && !(a.jMax > 0)) errors.push(`axis "${a.id}": jMax must be > 0 (or omitted for trapezoid motion)`);
     const min = a.min ?? -Infinity;
     const max = a.max ?? Infinity;
     if (min > max) errors.push(`axis "${a.id}": min > max`);
@@ -58,6 +59,8 @@ export function loadShow(raw) {
       max,
       vMax: a.vMax,
       aMax: a.aMax,
+      // Optional jerk limit (units/s³). Set: S-curve motion. Absent: trapezoid.
+      jMax: a.jMax > 0 ? a.jMax : undefined,
     };
   });
 

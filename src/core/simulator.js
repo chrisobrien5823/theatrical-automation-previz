@@ -9,6 +9,11 @@ import { planMove, planStop } from './profile.js';
 
 const DONE_EPS = 1e-9;
 
+/** Motion limits for one move: the cue may lower vMax; aMax and jMax (S-curve if set) come from the axis. */
+function moveLimits(move, axisDef) {
+  return { vMax: move.vMax ?? axisDef.vMax, aMax: axisDef.aMax, jMax: axisDef.jMax };
+}
+
 export class Simulator {
   /**
    * @param show normalized show from loadShow()
@@ -145,7 +150,7 @@ export class Simulator {
       const m = this.pending.shift();
       const ax = this.axes.get(m.axis);
       const def = this.axisDefs.get(m.axis);
-      const profile = planMove(ax.pos, m.target, { vMax: m.vMax ?? def.vMax, aMax: def.aMax });
+      const profile = planMove(ax.pos, m.target, moveLimits(m, def));
       ax.active = { profile, startTime: m.delay };
       // Sample immediately so a step that crosses the delay boundary stays in sync.
       const s = profile.sample(this.cueTime - m.delay);
@@ -179,7 +184,7 @@ export class Simulator {
     let end = 0;
     for (const m of [...cue.moves].sort((a, b) => a.delay - b.delay)) {
       const def = this.axisDefs.get(m.axis);
-      const p = planMove(pos[m.axis], m.target, { vMax: m.vMax ?? def.vMax, aMax: def.aMax });
+      const p = planMove(pos[m.axis], m.target, moveLimits(m, def));
       pos[m.axis] = m.target;
       end = Math.max(end, m.delay + p.duration);
     }
@@ -207,7 +212,7 @@ export class Simulator {
         const m = this.pending.find((p) => p.axis === id && p.delay <= t + DONE_EPS);
         if (m) {
           const def = this.axisDefs.get(id);
-          const profile = planMove(ax.pos, m.target, { vMax: m.vMax ?? def.vMax, aMax: def.aMax });
+          const profile = planMove(ax.pos, m.target, moveLimits(m, def));
           active = { profile, startTime: m.delay };
         }
       }
