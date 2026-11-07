@@ -87,6 +87,18 @@ describe('loadShow', () => {
   it('rejects unknown axis references', () => {
     expect(() => loadShow({ axes: [], cues: [{ id: '1', moves: [{ axis: 'nope', target: 1 }] }] })).toThrow(/unknown axis/);
   });
+
+  it('jMax is optional; set, the simulator runs an S-curve', () => {
+    const axis = { id: 'x', type: 'linear', min: 0, max: 10, vMax: 1, aMax: 1 };
+    const cues = [{ id: '1', moves: [{ axis: 'x', target: 4 }] }];
+    expect(() => loadShow({ axes: [{ ...axis, jMax: 0 }], cues })).toThrow(/jMax/);
+    const trapShow = loadShow({ axes: [axis], cues }).show;
+    const smoothShow = loadShow({ axes: [{ ...axis, jMax: 2 }], cues }).show;
+    expect(trapShow.axes[0].jMax).toBeUndefined();
+    const cue = trapShow.cues[0];
+    // S-curve adds aMax/jMax = 0.5 s to a move that reaches aMax and vMax.
+    expect(new Simulator(smoothShow).estimateDuration(cue)).toBeCloseTo(new Simulator(trapShow).estimateDuration(cue) + 0.5, 9);
+  });
 });
 
 describe('Simulator lookahead (render between sim steps)', () => {

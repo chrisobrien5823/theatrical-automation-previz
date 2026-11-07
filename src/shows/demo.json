@@ -12,7 +12,8 @@
       "min": -1.6,
       "max": 0.0,
       "vMax": 0.3,
-      "aMax": 0.3
+      "aMax": 0.3,
+      "jMax": 0.6
     },
     {
       "id": "turntable",
@@ -24,7 +25,8 @@
       "min": -360,
       "max": 360,
       "vMax": 12,
-      "aMax": 6
+      "aMax": 6,
+      "jMax": 12
     },
     {
       "id": "fly",
@@ -36,7 +38,8 @@
       "min": 2.0,
       "max": 10.0,
       "vMax": 1.0,
-      "aMax": 0.5
+      "aMax": 0.5,
+      "jMax": 1.0
     }
   ],
   "pieces": [
