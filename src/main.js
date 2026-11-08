@@ -12,7 +12,7 @@ import { loadShow } from './core/show.js';
 import { Simulator } from './core/simulator.js';
 import { piecePoses, mountChain } from './core/rig.js';
 import { buildPairs, checkClearance, ConflictTracker, pieceClosestPoints } from './core/clearance.js';
-import { preflightShow } from './core/preflight.js';
+import { preflightShow, createPreflightJob } from './core/preflight.js';
 import { modelPositions } from './core/edit.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
@@ -27,6 +27,7 @@ import { createLog } from './ui/log.js';
 import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './ui/format.js';
 import { icon } from './ui/icons.js';
 import { createAxisBus } from './ui/axisBus.js';
+import { runWhenIdle } from './ui/idleJob.js';
 import { selectTabButton, tabKeydown } from './ui/tabs.js';
 import { createRigPanel } from './ui/editor/rigPanel.js';
 import { openImportDialog } from './ui/editor/importDialog.js';
@@ -269,19 +270,34 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   return true;
 }
 
-function refreshPreflight() {
-  const fresh = preflightShow(show, sim.positions(), sim.cueIndex, { pairs });
+function applyPreflight(fresh) {
   preflight = preflight.map((old, i) => fresh[i] ?? old);
   cueList.setPreflight(fresh.map((r, i) => r ?? preflight[i]));
 }
 
+let cancelPreflightSweep = () => {};
+
+/** Re-sweep now, blocking. For loads and button presses, where nothing is moving and badges must be right at once. */
+function refreshPreflight() {
+  cancelPreflightSweep();
+  applyPreflight(preflightShow(show, sim.positions(), sim.cueIndex, { pairs }));
+}
+
+/** Re-sweep in idle time, so finishing a cue does not stall the frame. Any newer sweep cancels this one. */
+function refreshPreflightIdle() {
+  cancelPreflightSweep();
+  const job = createPreflightJob(show, sim.positions(), sim.cueIndex, { pairs });
+  cancelPreflightSweep = runWhenIdle(job, () => {
+    applyPreflight(job.results);
+    refreshUi();
+  });
+}
+
 let preflightTimer = null;
 function refreshPreflightSoon() {
+  cancelPreflightSweep(); // the axes just moved, so a sweep in progress is out of date
   clearTimeout(preflightTimer);
-  preflightTimer = setTimeout(() => {
-    refreshPreflight();
-    refreshUi();
-  }, 200);
+  preflightTimer = setTimeout(refreshPreflightIdle, 200);
 }
 
 function loadStateBefore(i) {
@@ -361,7 +377,7 @@ function onSimEvent(ev) {
       ran.add(show.cues.indexOf(cue));
       setCaught(cue);
       log.info(`Q${cue.id} complete`);
-      refreshPreflight();
+      refreshPreflightIdle();
       break;
     case 'stopping':
       log.info(`STOP during Q${cue.id} at t=${ev.cueTime.toFixed(2)} s`);
@@ -371,7 +387,7 @@ function onSimEvent(ev) {
       halted = cue;
       setCaught(cue);
       log.info(`Axes at rest, short of Q${cue.id}'s targets. GO re-runs Q${cue.id} from here.`);
-      refreshPreflight();
+      refreshPreflightIdle();
       break;
     case 'reset':
       halted = null;
