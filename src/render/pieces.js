@@ -5,6 +5,7 @@
 //   - compound box pieces with no model node: one mesh per collision box
 //   - model pieces: a node lifted out of the imported model and driven by the rig
 // Every piece gets a holder group posed from core poses, so drawing and clearance agree.
+// Rig edits skip this rebuild when sceneKey() (src/core/sceneKey.js) is unchanged: keep the fields it lists in step with what's read here.
 
 import * as THREE from 'three';
 import { SCENE } from './palette.js';
