@@ -14,6 +14,7 @@ import { piecePoses, mountChain } from './core/rig.js';
 import { buildPairs, checkClearance, ConflictTracker, pieceClosestPoints } from './core/clearance.js';
 import { preflightShow, createPreflightJob } from './core/preflight.js';
 import { modelPositions } from './core/edit.js';
+import { sceneKey } from './core/sceneKey.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
@@ -100,6 +101,7 @@ const log = createLog($('log'), $('logCount'), { onJump: (i) => loadStateBefore(
 
 let project = { raw: demoShow, source: null };
 let show, sim, pairs, pieces, modelView, tracker, preflight, stateBefore;
+let builtSceneKey = null; // sceneKey() of the show the current meshes were built from
 let hits = [];
 let ran = new Set(); // cue indices that actually ran since the last reset (the rest before standby were skipped)
 let clashed = new Set(); // the ones among them that were caught inside clearance (their DONE reads DONE / CLASH)
@@ -214,13 +216,20 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   const prevPositions = keep && sim ? sim.positions() : null;
   const prevIndex = keep && sim ? sim.cueIndex : 0;
 
+  const sameSource = project.source === source;
   project = { raw, source };
   show = result.show;
-  pieces?.dispose();
-  modelView = source && show.model ? new ModelView(source, show.model) : null;
   const atModel = modelPositions(show);
-  pieces = createPieces(view.scene, show, modelView, piecePoses(show, atModel));
-  pieces.setBoxesVisible(mode === 'rig' && boxesVisible);
+  // An edit that didn't touch anything the scene is built from keeps the existing meshes.
+  // Poses still follow the new show: frame() applies them from core every frame.
+  const key = sceneKey(show);
+  if (!(keep && pieces && sameSource && key === builtSceneKey)) {
+    pieces?.dispose();
+    modelView = source && show.model ? new ModelView(source, show.model) : null;
+    pieces = createPieces(view.scene, show, modelView, piecePoses(show, atModel));
+    pieces.setBoxesVisible(mode === 'rig' && boxesVisible);
+    builtSceneKey = key;
+  }
   pairs = buildPairs(show);
 
   // Model projects start with axes where the drawing shows them; edits keep current positions.
