@@ -15,6 +15,7 @@ import { buildPairs, checkClearance, ConflictTracker, pieceClosestPoints } from 
 import { preflightShow, createPreflightJob } from './core/preflight.js';
 import { modelPositions } from './core/edit.js';
 import { sceneKey } from './core/sceneKey.js';
+import { QUALITY_LEVELS, createQualityGovernor, parseQualityParam } from './core/quality.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
@@ -775,12 +776,22 @@ const nextFrame =
     ? (f) => setTimeout(() => f(performance.now()), 16)
     : requestAnimationFrame;
 
+// Phone GPU cost: start at full quality and let the governor step it down if frames run long.
+// `?quality=low` (or high / medium / lowest) pins one level instead, for comparing on a device.
+const pinnedQuality = parseQualityParam(new URLSearchParams(location.search).get('quality'));
+const quality = pinnedQuality == null ? createQualityGovernor() : null;
+view.setQuality(QUALITY_LEVELS[pinnedQuality ?? 0]);
+
 let last = performance.now();
 let simAccumulator = 0;
 let elapsed = 0;
 
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
+  if (quality) {
+    const level = quality.sample(now - last);
+    if (level != null) view.setQuality(QUALITY_LEVELS[level]);
+  }
   last = now;
   elapsed += dt;
 
