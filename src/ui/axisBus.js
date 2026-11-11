@@ -3,6 +3,7 @@
 // has a word next to it, so the state never depends on colour alone.
 
 import { esc, unitOf, axisCodes } from './format.js';
+import { writeText, writeData } from './domWrite.js';
 
 // On a phone the cell is too narrow for the axis name, so it shows a short code (.n-short) over the
 // position; the full name stays in the DOM (.n-full, visually hidden there) for screen readers.
@@ -25,7 +26,7 @@ export function createAxisBus(el) {
         item.innerHTML = `<span class="lamp"></span><span class="tape" aria-hidden="true"></span><span class="bus-name"><span class="n-full">${esc(a.name)}</span><span class="n-short" aria-hidden="true">${esc(codes[i])}</span></span><span class="bus-word"></span><span class="bus-pos tnum"></span>`;
         item.querySelector('.tape').style.setProperty('--tape', a.color);
         el.appendChild(item);
-        return [a.id, { item, word: item.querySelector('.bus-word'), pos: item.querySelector('.bus-pos'), u: unitOf(a), state: null, text: '' }];
+        return [a.id, { item, word: item.querySelector('.bus-word'), pos: item.querySelector('.bus-pos'), u: unitOf(a) }];
       }),
     );
     el.hidden = rows.size === 0;
@@ -37,12 +38,9 @@ export function createAxisBus(el) {
       const r = rows.get(s.id);
       if (!r) continue;
       const state = clashing.has(s.id) ? 'clash' : s.moving ? 'moving' : 'idle';
-      if (state !== r.state) {
-        r.item.dataset.state = r.state = state;
-        r.word.textContent = WORD[state];
-      }
-      const text = `${s.pos.toFixed(s.def.type === 'rotary' ? 1 : 2)} ${r.u.pos}`;
-      if (text !== r.text) r.pos.textContent = r.text = text;
+      writeData(r.item, 'state', state);
+      writeText(r.word, WORD[state]);
+      writeText(r.pos, `${s.pos.toFixed(s.def.type === 'rotary' ? 1 : 2)} ${r.u.pos}`);
     }
   }
 
