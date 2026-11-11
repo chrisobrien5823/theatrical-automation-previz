@@ -29,6 +29,7 @@ import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './u
 import { icon } from './ui/icons.js';
 import { createAxisBus } from './ui/axisBus.js';
 import { runWhenIdle } from './ui/idleJob.js';
+import { writeText, writeData, writeStyle } from './ui/domWrite.js';
 import { selectTabButton, tabKeydown } from './ui/tabs.js';
 import { createRigPanel } from './ui/editor/rigPanel.js';
 import { openImportDialog } from './ui/editor/importDialog.js';
@@ -645,13 +646,9 @@ $('loadDemo').addEventListener('click', () => {
 
 // ---------- UI refresh ----------
 
-/** Set text only when it changed (the HUD refreshes every frame). */
-function setText(el, text) {
-  if (el.textContent !== text) el.textContent = text;
-}
-function setLamp(el, state) {
-  if (el.dataset.state !== state) el.dataset.state = state;
-}
+// The HUD refreshes every frame: these write only when the value changed (see ui/domWrite.js).
+const setText = writeText;
+const setLamp = (el, state) => writeData(el, 'state', state);
 
 function refreshUi() {
   const running = sim.state !== 'idle';
@@ -711,9 +708,7 @@ function renderCaught() {
   });
 }
 
-let progressShown = -1;
 let alertKey = '';
-let hudStateShown = '';
 let hudContactShown = false;
 function refreshHud(worst) {
   const running = sim.state !== 'idle';
@@ -730,7 +725,7 @@ function refreshHud(worst) {
   else [word, lamp, hudState] = [mode === 'rig' ? 'Rig' : 'Ready', 'ready', 'ready'];
   setText(ui.stateWord, word);
   setLamp(ui.lamp, lamp);
-  if (hudState !== hudStateShown) ui.hud.dataset.state = hudStateShown = hudState;
+  writeData(ui.hud, 'state', hudState);
   const contact = hits.length > 0 && worst?.severity === 'contact';
   if (contact !== hudContactShown) ui.hud.toggleAttribute('data-contact', (hudContactShown = contact));
 
@@ -747,7 +742,7 @@ function refreshHud(worst) {
     setText(ui.hudTime, '');
   }
   pct = Math.round(pct * 10) / 10;
-  if (pct !== progressShown) ui.progress.style.width = `${(progressShown = pct)}%`;
+  writeStyle(ui.progress, 'width', `${pct}%`);
 
   if (worst) {
     const key = `${worst.key}|${worst.severity}|${formatGap(worst.gap)}|${hits.length}`;
