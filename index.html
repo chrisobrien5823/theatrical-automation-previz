@@ -48,7 +48,8 @@
               <button id="stop" type="button" class="btn btn-stop" aria-keyshortcuts="Escape">STOP</button>
               <button id="reset" type="button" class="btn btn-reset" aria-keyshortcuts="R">RESET</button>
             </div>
-            <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+            <!-- Cue timeline: progress while a cue runs, preflight conflicts in red, drag to preview while idle -->
+            <div id="timeline" class="timeline" data-mode="empty"></div>
             <!-- Below the transport so GO and STOP never move when it appears -->
             <p id="standbyNote" class="standby-note" hidden></p>
           </div>
