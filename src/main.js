@@ -19,6 +19,7 @@ import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
 import { createGapMarker } from './render/gapMarker.js';
+import { History, describeEdit } from './core/history.js';
 import { ModelView } from './model/modelView.js';
 import { readModelFiles, isModelFile } from './model/import.js';
 import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosave, exportGlb } from './model/project.js';
@@ -112,6 +113,7 @@ let speed = 1;
 let mode = 'run';
 let boxesVisible = true;
 let selection = { path: null, pieceId: null };
+const history = new History(); // Rig edits since the project was opened
 
 // ---------- App API (used by the Rig-mode editor) ----------
 
@@ -140,10 +142,18 @@ const app = {
   log,
   toast,
   load,
-  /** Apply an edited show document to the current project, keeping axis positions. */
+  /** Apply an edited show document to the current project, keeping axis positions. Undoable. */
   apply(raw, opts = {}) {
-    return load(raw, project.source, { keep: true, ...opts });
+    const before = project.raw;
+    if (!load(raw, project.source, { keep: true, ...opts })) return false;
+    history.record(before, project.raw, describeEdit(before, project.raw));
+    return true;
   },
+  get history() {
+    return history;
+  },
+  undo,
+  redo,
   select(sel) {
     selection = { path: sel.path ?? null, pieceId: sel.pieceId ?? null };
     updateOutline();
@@ -245,6 +255,7 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   if (!keep) {
     ran = new Set();
     clashed = new Set();
+    history.clear(); // a different project (or the demo, or an import preview): old steps don't apply
   }
 
   // State of the stage before each cue when the show is run in order from home (for "jump to cue").
@@ -344,6 +355,25 @@ function updateOutline() {
     else if (selection.path != null && modelView) obj = modelView.node(selection.path);
   }
   picking.outline(obj);
+}
+
+// ---------- Undo / redo (Rig edits) ----------
+
+/** Swap in a document from history. Axis positions and the standby cue stay where they are. */
+function loadFromHistory(raw) {
+  return load(raw, project.source, { keep: true });
+}
+
+function undo() {
+  if (sim.state !== 'idle') return toast('Undo waits until the cue finishes. STOP first.');
+  const label = history.undo(project.raw, loadFromHistory);
+  if (label) toast(`Undid: ${label}`);
+}
+
+function redo() {
+  if (sim.state !== 'idle') return toast('Redo waits until the cue finishes. STOP first.');
+  const label = history.redo(project.raw, loadFromHistory);
+  if (label) toast(`Redid: ${label}`);
 }
 
 // ---------- Autosave ----------
@@ -502,8 +532,15 @@ ui.reset.addEventListener('click', reset);
 ui.speed.addEventListener('change', () => (speed = Number(ui.speed.value)));
 
 window.addEventListener('keydown', (e) => {
-  if (e.target.closest('input, select, textarea, summary')) return;
+  if (e.target.closest('input, select, textarea, summary')) return; // text fields keep their own undo
   if (document.querySelector('.modal-wrap')) return;
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, in Rig mode only (Run mode edits nothing).
+  if (mode === 'rig' && (e.ctrlKey || e.metaKey) && !e.altKey && (e.code === 'KeyZ' || e.code === 'KeyY')) {
+    e.preventDefault();
+    if (e.code === 'KeyY' || e.shiftKey) redo();
+    else undo();
+    return;
+  }
   // Space is GO everywhere in Run mode, like a show-control desk. In the Rig panel, tabs and footer
   // it keeps its normal meaning so keyboard users can press the focused button.
   if (e.code === 'Space' && e.target.closest?.('#rigPanel, [role="tablist"], .cams, .panel-foot, .chip')) return;

@@ -16,6 +16,7 @@ import { tabKeydown } from '../tabs.js';
 const TABS = ['model', 'axes', 'cues'];
 const FOCUSABLE = 'button, input, select, textarea, summary, [tabindex]';
 const GUIDE_KEY = 'previz.rigGuideHidden';
+const MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '');
 
 export function createRigPanel(el, app) {
   let tab = 'model';
@@ -85,10 +86,16 @@ export function createRigPanel(el, app) {
       guide(),
       body,
       h(
-        'label',
-        { class: 'check-row rig-foot' },
-        h('input', { type: 'checkbox', checked: app.boxesVisible, 'data-fk': 'boxes', onchange: (e) => app.setBoxesVisible(e.target.checked) }),
-        'Show collision boxes',
+        'div',
+        { class: 'rig-foot' },
+        historyButton('undo'),
+        historyButton('redo'),
+        h(
+          'label',
+          { class: 'check-row' },
+          h('input', { type: 'checkbox', checked: app.boxesVisible, 'data-fk': 'boxes', onchange: (e) => app.setBoxesVisible(e.target.checked) }),
+          'Show collision boxes',
+        ),
       ),
     );
     body.scrollTop = scrollTops[tab] ?? 0;
@@ -101,6 +108,27 @@ export function createRigPanel(el, app) {
       const next = (focusKey && el.querySelector(`[data-fk="${CSS.escape(focusKey)}"]`)) || [...el.querySelectorAll(FOCUSABLE)][focusIndex];
       next?.focus({ preventScroll: true });
     }
+  }
+
+  /** Undo / Redo for the whole Rig (pieces, axes, cues). The tooltip names the step and the shortcut. */
+  function historyButton(dir) {
+    const label = dir === 'undo' ? app.history.undoLabel : app.history.redoLabel;
+    const word = dir === 'undo' ? 'Undo' : 'Redo';
+    const keys = MAC ? (dir === 'undo' ? '⌘Z' : '⇧⌘Z') : dir === 'undo' ? 'Ctrl+Z' : 'Ctrl+Y';
+    return h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn-small',
+        'data-fk': `history:${dir}`,
+        disabled: !label,
+        title: label ? `${word}: ${label} (${keys})` : `Nothing to ${dir} (${keys})`,
+        'aria-label': label ? `${word}: ${label}` : word,
+        onclick: () => app[dir](),
+      },
+      iconEl(dir),
+      word,
+    );
   }
 
   function showTab(t, keepFocus = false) {
