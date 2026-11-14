@@ -494,6 +494,7 @@ function reset() {
     while (sim.state !== 'idle') sim.step(SIM_STEP);
   }
   sim.reset();
+  readouts.clearTraces();
 }
 
 ui.go.addEventListener('click', go);
@@ -778,6 +779,7 @@ const nextFrame =
 let last = performance.now();
 let simAccumulator = 0;
 let elapsed = 0;
+let showClock = 0; // s of sim time spent running cues: scrolls the Axes tab's velocity traces, still at rest
 
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -786,6 +788,7 @@ function frame(now) {
 
   if (sim.state !== 'idle') {
     simAccumulator += dt * speed;
+    showClock += dt * speed;
     while (simAccumulator >= SIM_STEP && sim.state !== 'idle') {
       const cue = sim.activeCue;
       sim.step(SIM_STEP);
@@ -818,7 +821,7 @@ function frame(now) {
   gapMarker.set(worst && pieceClosestPoints(show, positions, worst.a, worst.b), worst ? formatGap(worst.gap) : '');
   picking.update();
   const states = sim.axisStatesAt(simAccumulator);
-  readouts.update(states);
+  readouts.update(states, showClock);
   axisBus.update(states, clashing);
   refreshHud(worst);
   if (hadHits !== hits.length > 0) refreshUi(); // running cue row turns to its conflict state and back
