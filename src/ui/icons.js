@@ -14,6 +14,8 @@ const PATHS = {
   replay: '<path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.6v2.6h2.6"/>',
   upload: '<path d="M8 10.6V2.8"/><path d="M4.6 6 8 2.6 11.4 6"/><path d="M2.8 10.4v2.8h10.4v-2.8"/>',
   mount: '<path d="M8 2.5 13.5 8 8 13.5 2.5 8Z"/>',
+  undo: '<path d="M5.4 3.2 2.5 6.1 5.4 9"/><path d="M2.7 6.1h6.6a3.6 3.6 0 0 1 0 7.2H6.4"/>',
+  redo: '<path d="m10.6 3.2 2.9 2.9-2.9 2.9"/><path d="M13.3 6.1H6.7a3.6 3.6 0 0 0 0 7.2h2.9"/>',
 };
 
 /** SVG markup for an icon. Decorative by default; pass a label when the icon is the only content. */
