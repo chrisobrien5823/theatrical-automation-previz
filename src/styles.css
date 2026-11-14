@@ -331,8 +331,36 @@ kbd {
 .btn-reset { background: var(--raised); border: 1px solid var(--edge); font-size: var(--t-state); }
 .btn-reset:hover { background: var(--raised-2); }
 
-.progress { height: 3px; background: var(--well); overflow: hidden; }
-#progressBar { height: 100%; width: 0; background: var(--move); }
+/* Cue timeline: a recessed track for the current cue. Cyan fill = progress while it runs (moving),
+   red spans = preflight clearance windows, a white 2px playhead while previewing. Square-cut, flat. */
+.timeline { display: flex; flex-direction: column; gap: var(--sp-1); }
+.tl-track {
+  position: relative; height: 24px; background: var(--well); border: 1px solid var(--rule);
+  touch-action: none; /* a drag along the track scrubs instead of scrolling the panel */
+}
+.timeline[data-mode='idle'] .tl-track, .timeline[data-mode='preview'] .tl-track { border-color: var(--edge); cursor: ew-resize; }
+.tl-track:focus-visible { outline-offset: 2px; }
+.tl-marks, #progressBar, .tl-head { position: absolute; top: 0; bottom: 0; }
+.tl-marks { left: 0; right: 0; }
+#progressBar { left: 0; width: 0; background: var(--move); }
+/* Red spans sit in the lower half while the cyan fill runs over the top half, so both stay readable */
+.tl-mark { position: absolute; top: 50%; bottom: 0; background: var(--clr); }
+.tl-mark.contact { top: 0; }
+.timeline[data-mode='live'] #progressBar { bottom: 50%; }
+.tl-head { width: 2px; margin-left: -1px; background: #fff; }
+.tl-meta {
+  display: flex; align-items: center; gap: var(--sp-2); min-height: 18px;
+  font: 600 var(--t-label)/1.2 var(--sans); letter-spacing: .02em; color: var(--legend);
+}
+.tl-say { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline[data-mode='preview'] .tl-t { color: var(--text); }
+.tl-dur { margin-left: auto; }
+.timeline[data-mode='preview'] .tl-dur { display: none; } /* the HUD carries t / length while previewing; the pair and gap get the room */
+.tl-exit {
+  min-height: 24px; padding: 0 8px; border: 1px solid var(--edge); border-radius: var(--r-ctl);
+  background: none; color: var(--text); font: 600 var(--t-label)/1 var(--sans);
+}
+.tl-exit:hover { background: var(--raised); }
 
 .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--rule); flex: none; }
 .tabs button {
@@ -633,6 +661,7 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
   .check-row, .tree-row, .jog input[type='range'] { min-height: 44px; }
   .cams button { min-width: 48px; }
   .caught-close { width: 44px; }
+  .tl-track, .tl-exit { min-height: 44px; }
 }
 
 /* Tabular figures wherever a number changes or lines up (set last: the font shorthand above resets it) */
