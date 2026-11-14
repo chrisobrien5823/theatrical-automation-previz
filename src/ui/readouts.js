@@ -1,6 +1,7 @@
 // Per-axis position / velocity readouts with a limit bar.
 
 import { unitOf, esc } from './format.js';
+import { writeText, writeHidden, writeStyle } from './domWrite.js';
 
 export function createReadouts(el) {
   let rows = new Map();
@@ -29,17 +30,17 @@ export function createReadouts(el) {
     );
   }
 
+  // Runs every frame. Each field is written only when its text changes, so a stage at rest costs no
+  // DOM writes and a moving axis only touches the digits that rolled over.
   function update(states) {
     for (const s of states) {
       const r = rows.get(s.id);
       if (!r) continue;
-      const digits = s.def.type === 'rotary' ? 1 : 3;
-      r.pos.textContent = `${s.pos.toFixed(digits)} ${r.u.pos}`;
-      r.vel.textContent = `v ${s.vel >= 0 ? ' ' : ''}${s.vel.toFixed(digits === 1 ? 1 : 2)} ${r.u.vel}`;
-      r.mv.hidden = !s.moving;
-      const { min, max } = s.def;
-      const k = Number.isFinite(min) && Number.isFinite(max) && max > min ? (s.pos - min) / (max - min) : 0.5;
-      r.tick.style.left = `${Math.max(0, Math.min(1, k)) * 100}%`;
+      const f = readoutFields(s, r.u);
+      writeText(r.pos, f.pos);
+      writeText(r.vel, f.vel);
+      writeHidden(r.mv, !f.moving);
+      writeStyle(r.tick, 'left', f.left);
     }
   }
 
@@ -48,4 +49,23 @@ export function createReadouts(el) {
 
 function fmtLimit(v) {
   return Number.isFinite(v) ? v : '∞';
+}
+
+/**
+ * The strings one readout row shows for an axis state ({ pos, vel, moving, def }). Pure, so the
+ * formatting (and how often it changes) is unit-tested without a DOM. The limit-bar tick is rounded
+ * to 0.1 % of travel: finer than a pixel on any panel, and it stops sub-pixel float noise from
+ * counting as a change.
+ */
+export function readoutFields(s, u) {
+  const digits = s.def.type === 'rotary' ? 1 : 3;
+  const { min, max } = s.def;
+  const k = Number.isFinite(min) && Number.isFinite(max) && max > min ? (s.pos - min) / (max - min) : 0.5;
+  const pct = Math.round(Math.max(0, Math.min(1, k)) * 1000) / 10;
+  return {
+    pos: `${s.pos.toFixed(digits)} ${u.pos}`,
+    vel: `v ${s.vel >= 0 ? ' ' : ''}${s.vel.toFixed(digits === 1 ? 1 : 2)} ${u.vel}`,
+    moving: !!s.moving,
+    left: `${pct}%`,
+  };
 }

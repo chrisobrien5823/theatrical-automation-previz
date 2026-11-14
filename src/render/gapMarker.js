@@ -4,6 +4,7 @@
 // 3D view, so it stays crisp at any camera distance and is never hidden behind scenery.
 
 import * as THREE from 'three';
+import { writeText, writeHidden, writeStyle, writeAttr } from '../ui/domWrite.js';
 
 const TICK = 7; // px, half-length of the end ticks
 const MIN_LEN = 24; // px, shortest dimension line drawn: a visual floor so a tiny gap is still a visible line (the label keeps the true gap)
@@ -20,13 +21,13 @@ export function createGapMarker(view, stageEl) {
     <line class="dim-tick a" />
     <line class="dim-tick b" />
     <circle class="dim-contact" r="9" />`;
-  svg.style.display = 'none';
+  writeStyle(svg, 'display', 'none');
   stageEl.append(svg);
   const [ext, line, tickA, tickB, contact] = svg.children;
 
   const label = document.createElement('div');
   label.className = 'gap-label tnum';
-  label.hidden = true;
+  writeHidden(label, true);
   label.setAttribute('aria-hidden', 'true');
   stageEl.append(label);
 
@@ -37,20 +38,19 @@ export function createGapMarker(view, stageEl) {
   const pc = new THREE.Vector3();
   let visible = false;
   let touching = false;
-  let text = '';
 
   /** w: { a: [x,y,z], b: [x,y,z], gap } or null to hide. */
   function set(w, labelText) {
     visible = !!w;
     if (!w) {
-      svg.style.display = 'none';
-      label.hidden = true;
+      writeStyle(svg, 'display', 'none');
+      writeHidden(label, true);
       return;
     }
     a.fromArray(w.a);
     b.fromArray(w.b);
     touching = w.gap <= 1e-6;
-    if (labelText !== text) label.textContent = text = labelText;
+    writeText(label, labelText);
   }
 
   const toScreen = (v, out, r) => {
@@ -58,25 +58,26 @@ export function createGapMarker(view, stageEl) {
     return { x: (out.x * 0.5 + 0.5) * r.clientWidth, y: (-out.y * 0.5 + 0.5) * r.clientHeight, behind: out.z > 1 };
   };
   const put = (el, x1, y1, x2, y2) => {
-    el.setAttribute('x1', x1.toFixed(1));
-    el.setAttribute('y1', y1.toFixed(1));
-    el.setAttribute('x2', x2.toFixed(1));
-    el.setAttribute('y2', y2.toFixed(1));
+    writeAttr(el, 'x1', x1.toFixed(1));
+    writeAttr(el, 'y1', y1.toFixed(1));
+    writeAttr(el, 'x2', x2.toFixed(1));
+    writeAttr(el, 'y2', y2.toFixed(1));
   };
 
-  /** Re-project after the camera moves (call once per frame, after rendering). */
+  /** Re-project after the camera moves (call once per frame, after rendering). Each attribute and style
+   *  is written only when its rounded value changes, so a still camera on a held clash writes nothing. */
   function update() {
     if (!visible) return;
     const r = view.renderer.domElement;
     const sa = toScreen(a, pa, r);
     const sb = toScreen(b, pb, r);
     if (sa.behind || sb.behind) {
-      svg.style.display = 'none';
-      label.hidden = true;
+      writeStyle(svg, 'display', 'none');
+      writeHidden(label, true);
       return;
     }
-    svg.style.display = '';
-    label.hidden = false;
+    writeStyle(svg, 'display', '');
+    writeHidden(label, false);
     const dx = sb.x - sa.x;
     const dy = sb.y - sa.y;
     const len = Math.hypot(dx, dy);
@@ -84,15 +85,15 @@ export function createGapMarker(view, stageEl) {
     const my = (sa.y + sb.y) / 2;
     // The ring means real contact; a gap that projects to a pixel or two still gets its ticks.
     const isContact = touching;
-    contact.style.display = isContact ? '' : 'none';
-    for (const el of [line, tickA, tickB]) el.style.display = isContact ? 'none' : '';
+    writeStyle(contact, 'display', isContact ? '' : 'none');
+    for (const el of [line, tickA, tickB]) writeStyle(el, 'display', isContact ? 'none' : '');
     // Label sits off to one side of the line, joined by a short leader.
     const lx = mx;
     const ly = my - LEADER;
     put(ext, mx, my, lx, ly);
     if (isContact) {
-      contact.setAttribute('cx', mx.toFixed(1));
-      contact.setAttribute('cy', my.toFixed(1));
+      writeAttr(contact, 'cx', mx.toFixed(1));
+      writeAttr(contact, 'cy', my.toFixed(1));
     } else {
       let [ux, uy] = len > 0.5 ? [dx / len, dy / len] : [0, 1];
       let [x1, y1, x2, y2] = [sa.x, sa.y, sb.x, sb.y];
@@ -117,7 +118,7 @@ export function createGapMarker(view, stageEl) {
       put(tickA, x1 - nx, y1 - ny, x1 + nx, y1 + ny);
       put(tickB, x2 - nx, y2 - ny, x2 + nx, y2 + ny);
     }
-    label.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px) translate(-50%, -100%)`;
+    writeStyle(label, 'transform', `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px) translate(-50%, -100%)`);
   }
 
   return { set, update };
