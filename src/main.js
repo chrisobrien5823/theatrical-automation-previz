@@ -13,12 +13,15 @@ import { Simulator } from './core/simulator.js';
 import { piecePoses, mountChain } from './core/rig.js';
 import { buildPairs, checkClearance, ConflictTracker, pieceClosestPoints } from './core/clearance.js';
 import { preflightShow, createPreflightJob } from './core/preflight.js';
+import { createCueScrubber, timelineMarks } from './core/scrub.js';
 import { modelPositions } from './core/edit.js';
 import { sceneKey } from './core/sceneKey.js';
+import { QUALITY_LEVELS, createQualityGovernor, parseQualityParam } from './core/quality.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
 import { createGapMarker } from './render/gapMarker.js';
+import { History, describeEdit } from './core/history.js';
 import { ModelView } from './model/modelView.js';
 import { readModelFiles, isModelFile } from './model/import.js';
 import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosave, exportGlb } from './model/project.js';
@@ -28,7 +31,9 @@ import { createLog } from './ui/log.js';
 import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './ui/format.js';
 import { icon } from './ui/icons.js';
 import { createAxisBus } from './ui/axisBus.js';
+import { createTimeline } from './ui/timeline.js';
 import { runWhenIdle } from './ui/idleJob.js';
+import { writeText, writeData, writeStyle } from './ui/domWrite.js';
 import { selectTabButton, tabKeydown } from './ui/tabs.js';
 import { createRigPanel } from './ui/editor/rigPanel.js';
 import { openImportDialog } from './ui/editor/importDialog.js';
@@ -37,6 +42,8 @@ import sampleSetUrl from '../samples/test-set.glb?url';
 const SIM_STEP = 0.01; // fixed 10 ms sim step, same as preflight, so live and predicted results agree
 
 const $ = (id) => document.getElementById(id);
+// Built first: it creates the #progressBar fill that `ui.progress` points at.
+const timeline = createTimeline($('timeline'), { onScrub: scrubTo, onExit: endPreview });
 const ui = {
   go: $('go'),
   stop: $('stop'),
@@ -106,12 +113,14 @@ let hits = [];
 let ran = new Set(); // cue indices that actually ran since the last reset (the rest before standby were skipped)
 let clashed = new Set(); // the ones among them that were caught inside clearance (their DONE reads DONE / CLASH)
 let halted = null; // cue that was STOPped mid-move; axes are parked short of its targets until GO / RESET
+let preview = null; // { index, scrubber, t }: the timeline is scrubbing the standby cue (idle only); the stage shows that moment
 let caught = null; // { cueIndex, w }: the worst clearance conflict of the last cue, shown until the next GO / RESET
 let framedThisCue = false; // the camera swings to the first conflict of a cue, once
 let speed = 1;
 let mode = 'run';
 let boxesVisible = true;
 let selection = { path: null, pieceId: null };
+const history = new History(); // Rig edits since the project was opened
 
 // ---------- App API (used by the Rig-mode editor) ----------
 
@@ -140,10 +149,18 @@ const app = {
   log,
   toast,
   load,
-  /** Apply an edited show document to the current project, keeping axis positions. */
+  /** Apply an edited show document to the current project, keeping axis positions. Undoable. */
   apply(raw, opts = {}) {
-    return load(raw, project.source, { keep: true, ...opts });
+    const before = project.raw;
+    if (!load(raw, project.source, { keep: true, ...opts })) return false;
+    history.record(before, project.raw, describeEdit(before, project.raw));
+    return true;
   },
+  get history() {
+    return history;
+  },
+  undo,
+  redo,
   select(sel) {
     selection = { path: sel.path ?? null, pieceId: sel.pieceId ?? null };
     updateOutline();
@@ -242,9 +259,11 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   hits = [];
   halted = null;
   caught = null;
+  preview = null;
   if (!keep) {
     ran = new Set();
     clashed = new Set();
+    history.clear(); // a different project (or the demo, or an import preview): old steps don't apply
   }
 
   // State of the stage before each cue when the show is run in order from home (for "jump to cue").
@@ -282,6 +301,7 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
 function applyPreflight(fresh) {
   preflight = preflight.map((old, i) => fresh[i] ?? old);
   cueList.setPreflight(fresh.map((r, i) => r ?? preflight[i]));
+  syncTimeline();
 }
 
 let cancelPreflightSweep = () => {};
@@ -346,6 +366,25 @@ function updateOutline() {
   picking.outline(obj);
 }
 
+// ---------- Undo / redo (Rig edits) ----------
+
+/** Swap in a document from history. Axis positions and the standby cue stay where they are. */
+function loadFromHistory(raw) {
+  return load(raw, project.source, { keep: true });
+}
+
+function undo() {
+  if (sim.state !== 'idle') return toast('Undo waits until the cue finishes. STOP first.');
+  const label = history.undo(project.raw, loadFromHistory);
+  if (label) toast(`Undid: ${label}`);
+}
+
+function redo() {
+  if (sim.state !== 'idle') return toast('Redo waits until the cue finishes. STOP first.');
+  const label = history.redo(project.raw, loadFromHistory);
+  if (label) toast(`Redid: ${label}`);
+}
+
 // ---------- Autosave ----------
 
 let autosaveTimer = null;
@@ -370,6 +409,7 @@ function scheduleAutosave() {
 
 function onSimEvent(ev) {
   const cue = ev.cue;
+  preview = null; // GO, STOP, RESET, standby or a jog: the stage is live again, from the real positions
   switch (ev.type) {
     case 'cueStart': {
       tracker = new ConflictTracker();
@@ -503,8 +543,15 @@ ui.reset.addEventListener('click', reset);
 ui.speed.addEventListener('change', () => (speed = Number(ui.speed.value)));
 
 window.addEventListener('keydown', (e) => {
-  if (e.target.closest('input, select, textarea, summary')) return;
+  if (e.target.closest('input, select, textarea, summary')) return; // text fields keep their own undo
   if (document.querySelector('.modal-wrap')) return;
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, in Rig mode only (Run mode edits nothing).
+  if (mode === 'rig' && (e.ctrlKey || e.metaKey) && !e.altKey && (e.code === 'KeyZ' || e.code === 'KeyY')) {
+    e.preventDefault();
+    if (e.code === 'KeyY' || e.shiftKey) redo();
+    else undo();
+    return;
+  }
   // Space is GO everywhere in Run mode, like a show-control desk. In the Rig panel, tabs and footer
   // it keeps its normal meaning so keyboard users can press the focused button.
   if (e.code === 'Space' && e.target.closest?.('#rigPanel, [role="tablist"], .cams, .panel-foot, .chip')) return;
@@ -512,7 +559,8 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     go();
   } else if (e.code === 'Escape') {
-    stop();
+    if (preview && sim.state === 'idle') endPreview();
+    else stop();
   } else if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey) {
     reset();
   }
@@ -536,6 +584,7 @@ function setMode(m) {
   }
   mode = m;
   document.getElementById('app').dataset.mode = m;
+  if (m !== 'run') endPreview(); // the timeline lives in the Run deck
   if (m === 'rig' && caught) {
     caught = null; // the Run-mode result card doesn't belong over editing
     renderCaught();
@@ -646,13 +695,9 @@ $('loadDemo').addEventListener('click', () => {
 
 // ---------- UI refresh ----------
 
-/** Set text only when it changed (the HUD refreshes every frame). */
-function setText(el, text) {
-  if (el.textContent !== text) el.textContent = text;
-}
-function setLamp(el, state) {
-  if (el.dataset.state !== state) el.dataset.state = state;
-}
+// The HUD refreshes every frame: these write only when the value changed (see ui/domWrite.js).
+const setText = writeText;
+const setLamp = (el, state) => writeData(el, 'state', state);
 
 function refreshUi() {
   const running = sim.state !== 'idle';
@@ -683,6 +728,47 @@ function refreshUi() {
     conflict: running && hits.length > 0,
   });
   renderCaught();
+  syncTimeline();
+}
+
+// ---------- Cue timeline / scrubber ----------
+
+/** Preview the standby cue at cue time t: the stage, gaps and highlights show that moment until GO / Esc. */
+function scrubTo(t) {
+  if (!sim || sim.state !== 'idle' || mode !== 'run') return;
+  const i = sim.cueIndex;
+  if (!preview || preview.index !== i) {
+    // From the real positions, the same start the preflight badge for this cue was swept from.
+    const scrubber = createCueScrubber(show, sim.positions(), i, { dt: SIM_STEP });
+    if (!scrubber) return;
+    preview = { index: i, scrubber, t: 0 };
+  }
+  preview.t = Math.min(preview.scrubber.duration, Math.max(0, t));
+  syncTimeline();
+}
+
+function endPreview() {
+  if (!preview) return;
+  preview = null;
+  syncTimeline();
+}
+
+function syncTimeline() {
+  if (!sim) return;
+  const live = sim.state !== 'idle';
+  const index = live ? show.cues.indexOf(sim.activeCue) : sim.cueIndex;
+  const cue = show.cues[index] ?? null;
+  const result = preflight?.[index] ?? null;
+  const duration = preview ? preview.scrubber.duration : live ? sim.cueDuration : (result?.duration ?? 0);
+  const worst = preview && hits.length ? hits.reduce((a, b) => (b.gap < a.gap ? b : a)) : null;
+  timeline.update({
+    cue,
+    duration,
+    marks: timelineMarks(result),
+    mode: !cue ? 'empty' : live ? 'live' : preview ? 'preview' : 'idle',
+    t: preview?.t ?? 0,
+    hit: worst,
+  });
 }
 
 let caughtShown = null;
@@ -712,9 +798,7 @@ function renderCaught() {
   });
 }
 
-let progressShown = -1;
 let alertKey = '';
-let hudStateShown = '';
 let hudContactShown = false;
 function refreshHud(worst) {
   const running = sim.state !== 'idle';
@@ -723,7 +807,11 @@ function refreshHud(worst) {
   let word;
   let lamp;
   let hudState;
-  if (hits.length) [word, lamp, hudState] = ['Conflict', 'clash', 'clash'];
+  const previewing = !!preview && !running;
+  // A preview is not a live state: neutral ground, an unlit lamp and its own word (One Meaning Rule).
+  // The pieces, the gap dimension and the timeline still show any conflict at that moment.
+  if (previewing) [word, lamp, hudState] = ['Preview', 'off', 'ready'];
+  else if (hits.length) [word, lamp, hudState] = ['Conflict', 'clash', 'clash'];
   else if (sim.state === 'stopping') [word, lamp, hudState] = ['Stopping', 'standby', 'stopped']; // amber = held, not a clearance problem
   else if (running) [word, lamp, hudState] = ['Running', 'moving', 'running'];
   else if (caught) [word, lamp, hudState] = ['Caught', 'clash', 'caught']; // rests here until the Caught card is dismissed / next GO / RESET
@@ -731,7 +819,7 @@ function refreshHud(worst) {
   else [word, lamp, hudState] = [mode === 'rig' ? 'Rig' : 'Ready', 'ready', 'ready'];
   setText(ui.stateWord, word);
   setLamp(ui.lamp, lamp);
-  if (hudState !== hudStateShown) ui.hud.dataset.state = hudStateShown = hudState;
+  writeData(ui.hud, 'state', hudState);
   const contact = hits.length > 0 && worst?.severity === 'contact';
   if (contact !== hudContactShown) ui.hud.toggleAttribute('data-contact', (hudContactShown = contact));
 
@@ -741,6 +829,10 @@ function refreshHud(worst) {
     setText(ui.hudCue, `Q${c.id} ${c.name}`);
     setText(ui.hudTime, `${sim.cueTime.toFixed(2)} / ${sim.cueDuration.toFixed(2)} s`);
     pct = Math.min(100, (100 * sim.cueTime) / (sim.cueDuration || 1));
+  } else if (previewing) {
+    const c = show.cues[preview.index];
+    setText(ui.hudCue, `Q${c.id} ${c.name}`);
+    setText(ui.hudTime, `${preview.t.toFixed(2)} / ${preview.scrubber.duration.toFixed(2)} s`);
   } else {
     // The next cue is the panel's Standby row; the HUD only says something the panel does not.
     const rest = caught ? `Q${show.cues[caught.cueIndex].id}${halted ? ' not at target' : ''}` : halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet';
@@ -748,9 +840,9 @@ function refreshHud(worst) {
     setText(ui.hudTime, '');
   }
   pct = Math.round(pct * 10) / 10;
-  if (pct !== progressShown) ui.progress.style.width = `${(progressShown = pct)}%`;
+  writeStyle(ui.progress, 'width', `${pct}%`);
 
-  if (worst) {
+  if (worst && !previewing) {
     const key = `${worst.key}|${worst.severity}|${formatGap(worst.gap)}|${hits.length}`;
     if (key !== alertKey) {
       alertKey = key;
@@ -776,6 +868,12 @@ const nextFrame =
     ? (f) => setTimeout(() => f(performance.now()), 16)
     : requestAnimationFrame;
 
+// Phone GPU cost: start at full quality and let the governor step it down if frames run long.
+// `?quality=low` (or high / medium / lowest) pins one level instead, for comparing on a device.
+const pinnedQuality = parseQualityParam(new URLSearchParams(location.search).get('quality'));
+const quality = pinnedQuality == null ? createQualityGovernor() : null;
+view.setQuality(QUALITY_LEVELS[pinnedQuality ?? 0]);
+
 let last = performance.now();
 let simAccumulator = 0;
 let elapsed = 0;
@@ -783,6 +881,10 @@ let showClock = 0; // s of sim time spent running cues: scrolls the Axes tab's v
 
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
+  if (quality) {
+    const level = quality.sample(now - last);
+    if (level != null) view.setQuality(QUALITY_LEVELS[level]);
+  }
   last = now;
   elapsed += dt;
 
@@ -804,7 +906,10 @@ function frame(now) {
 
   // Draw at the exact frame time, not the last 10 ms step boundary (removes 1-2 / 0-1 step judder).
   // Clearance tracking above still runs on whole steps, so live and preflight results stay identical.
-  const positions = sim.positionsAt(simAccumulator);
+  // While previewing, draw the scrubbed moment instead; everything below (pieces, clearance, gap
+  // dimension, readouts) follows from these positions, so the preview is checked like a live frame.
+  const previewing = preview && sim.state === 'idle';
+  const positions = previewing ? preview.scrubber.poseAt(preview.t) : sim.positionsAt(simAccumulator);
   const hadHits = hits.length > 0;
   hits = checkClearance(show, positions, pairs);
   pieces.update(piecePoses(show, positions));
@@ -820,11 +925,12 @@ function frame(now) {
   const worst = hits.length ? hits.reduce((a, b) => (b.gap < a.gap ? b : a)) : null;
   gapMarker.set(worst && pieceClosestPoints(show, positions, worst.a, worst.b), worst ? formatGap(worst.gap) : '');
   picking.update();
-  const states = sim.axisStatesAt(simAccumulator);
+  const states = previewing ? preview.scrubber.statesAt(preview.t) : sim.axisStatesAt(simAccumulator);
   readouts.update(states, showClock);
   axisBus.update(states, clashing);
   refreshHud(worst);
   if (hadHits !== hits.length > 0) refreshUi(); // running cue row turns to its conflict state and back
+  else if (previewing) syncTimeline(); // the pair and gap at the playhead
   view.render(dt);
   gapMarker.update();
   nextFrame(frame);

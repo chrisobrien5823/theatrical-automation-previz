@@ -146,6 +146,13 @@ export function createScene(container) {
   resize();
   setPreset('FOH', false);
 
+  // Adaptive quality (see src/core/quality.js). setPixelRatio resizes the drawing buffer; turning
+  // off castShadow skips the shadow pass, and Three recompiles the lit materials on its own.
+  function setQuality({ maxPixelRatio, shadows }) {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
+    key.castShadow = shadows;
+  }
+
   function render(dt) {
     if (camTween) {
       camTween.t = Math.min(1, camTween.t + dt / 0.8);
@@ -158,5 +165,5 @@ export function createScene(container) {
     renderer.render(scene, camera);
   }
 
-  return { renderer, scene, camera, controls, render, setPreset, frameBounds, focusGap, setInsets };
+  return { renderer, scene, camera, controls, render, setQuality, setPreset, frameBounds, focusGap, setInsets };
 }

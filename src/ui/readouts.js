@@ -1,6 +1,7 @@
 // Per-axis position / velocity readouts with a velocity trace and a limit bar.
 
 import { unitOf, esc } from './format.js';
+import { writeText, writeStyle, writeData } from './domWrite.js';
 import { createTrace, tracePath } from './velTrace.js';
 
 // Trace box in SVG user units. The SVG stretches to the row width (preserveAspectRatio="none") and
@@ -45,7 +46,6 @@ export function createReadouts(el) {
             tick: div.querySelector('.axis-bar i'),
             path: div.querySelector('.axis-trace path'),
             trace: createTrace(),
-            moving: null,
           },
         ];
       }),
@@ -54,26 +54,23 @@ export function createReadouts(el) {
 
   /**
    * states: sim.axisStatesAt(); t: the show clock in seconds (advances only while a cue runs), used
-   * to scroll the velocity traces.
+   * to scroll the velocity traces. Runs every frame; each field is written only when its text
+   * changes, so a stage at rest costs no DOM writes.
    */
   function update(states, t = 0) {
     for (const s of states) {
       const r = rows.get(s.id);
       if (!r) continue;
-      const digits = s.def.type === 'rotary' ? 1 : 3;
-      r.pos.textContent = `${s.pos.toFixed(digits)} ${r.u.pos}`;
-      r.vel.textContent = `v ${s.vel >= 0 ? ' ' : ''}${s.vel.toFixed(digits === 1 ? 1 : 2)} ${r.u.vel}`;
+      const f = readoutFields(s, r.u);
+      writeText(r.pos, f.pos);
+      writeText(r.vel, f.vel);
       // Lamp and word, like the axis bus: cyan MOVING while the axis moves, unlit IN POS at rest.
-      const moving = !!s.moving;
-      if (moving !== r.moving) {
-        r.moving = moving;
-        r.row.dataset.state = r.lamp.dataset.state = moving ? 'moving' : 'idle';
-        r.mv.textContent = moving ? 'MOVING' : 'IN POS';
-      }
+      const state = f.moving ? 'moving' : 'idle';
+      writeData(r.row, 'state', state);
+      writeData(r.lamp, 'state', state);
+      writeText(r.mv, f.moving ? 'MOVING' : 'IN POS');
       if (r.trace.push(t, s.vel)) r.path.setAttribute('d', tracePath(r.trace.samples, t, r.trace.window, s.def.vMax, TW, TH));
-      const { min, max } = s.def;
-      const k = Number.isFinite(min) && Number.isFinite(max) && max > min ? (s.pos - min) / (max - min) : 0.5;
-      r.tick.style.left = `${Math.max(0, Math.min(1, k)) * 100}%`;
+      writeStyle(r.tick, 'left', f.left);
     }
   }
 
@@ -90,4 +87,23 @@ export function createReadouts(el) {
 
 function fmtLimit(v) {
   return Number.isFinite(v) ? v : '∞';
+}
+
+/**
+ * The strings one readout row shows for an axis state ({ pos, vel, moving, def }). Pure, so the
+ * formatting (and how often it changes) is unit-tested without a DOM. The limit-bar tick is rounded
+ * to 0.1 % of travel: finer than a pixel on any panel, and it stops sub-pixel float noise from
+ * counting as a change.
+ */
+export function readoutFields(s, u) {
+  const digits = s.def.type === 'rotary' ? 1 : 3;
+  const { min, max } = s.def;
+  const k = Number.isFinite(min) && Number.isFinite(max) && max > min ? (s.pos - min) / (max - min) : 0.5;
+  const pct = Math.round(Math.max(0, Math.min(1, k)) * 1000) / 10;
+  return {
+    pos: `${s.pos.toFixed(digits)} ${u.pos}`,
+    vel: `v ${s.vel >= 0 ? ' ' : ''}${s.vel.toFixed(digits === 1 ? 1 : 2)} ${u.vel}`,
+    moving: !!s.moving,
+    left: `${pct}%`,
+  };
 }
