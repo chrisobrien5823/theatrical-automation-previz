@@ -17,6 +17,7 @@ import { createCueScrubber, timelineMarks } from './core/scrub.js';
 import { modelPositions } from './core/edit.js';
 import { sceneKey } from './core/sceneKey.js';
 import { QUALITY_LEVELS, createQualityGovernor, parseQualityParam } from './core/quality.js';
+import { createAttract, attractCueIndex, parseBoothParam } from './core/attract.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
@@ -108,6 +109,7 @@ const log = createLog($('log'), $('logCount'), { onJump: (i) => loadStateBefore(
 
 let project = { raw: demoShow, source: null };
 let show, sim, pairs, pieces, modelView, tracker, preflight, stateBefore;
+let attractIndex = -1; // the cue the booth loop replays: the first one preflight flags when run from home
 let builtSceneKey = null; // sceneKey() of the show the current meshes were built from
 let hits = [];
 let ran = new Set(); // cue indices that actually ran since the last reset (the rest before standby were skipped)
@@ -271,6 +273,7 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   const chain = preflightShow(show, home, 0, { pairs });
   stateBefore = chain.map((r, i) => (i === 0 ? home : chain[i - 1].endPositions));
   preflight = chain;
+  attractIndex = attractCueIndex(chain);
 
   ui.showName.textContent = show.name;
   document.title = `${show.name} · Stage Previz`;
@@ -329,14 +332,14 @@ function refreshPreflightSoon() {
   preflightTimer = setTimeout(refreshPreflightIdle, 200);
 }
 
-function loadStateBefore(i) {
+function loadStateBefore(i, { quiet = false } = {}) {
   if (!sim || sim.state !== 'idle' || !stateBefore[i]) return;
   sim.load(stateBefore[i], i);
   caught = null;
   // The stage now looks exactly as if Q1 … Q(i-1) had run in order from home.
   ran = new Set(show.cues.slice(0, i).map((_, k) => k));
   clashed = new Set();
-  log.info(`Loaded the stage as it stands before Q${show.cues[i].id}. GO to replay it.`);
+  if (!quiet) log.info(`Loaded the stage as it stands before Q${show.cues[i].id}. GO to replay it.`);
   refreshUi();
 }
 
@@ -859,6 +862,35 @@ function refreshHud(worst) {
   }
 }
 
+// ---------- Booth loop ----------
+
+// `?booth` (or `?booth=20` for a 20 s wait): once the stage has sat untouched, replay the show's
+// near-miss cue on a loop for people walking past. The first touch, click, key or wheel hands the
+// stage back, reset to Q1. Capture phase, so the reset lands before that same tap's own action
+// (a tap on GO resets, then runs Q1). The timing logic lives in src/core/attract.js.
+const boothDelay = parseBoothParam(new URLSearchParams(location.search).get('booth'));
+const attract = boothDelay == null ? null : createAttract({ idleDelay: boothDelay });
+if (attract) {
+  const takeOver = () => {
+    if (!attract.poke()) return; // not looping: the poke just restarted the idle count
+    reset();
+    toast(`Your turn. The show is back at Q${show.cues[0]?.id ?? '1'}.`);
+  };
+  for (const type of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(type, takeOver, { capture: true, passive: true });
+}
+
+function boothTick(dt) {
+  const eligible = mode === 'run' && attractIndex >= 0 && !preview && !document.querySelector('.modal-wrap');
+  if (attract.tick(dt, { simIdle: sim.state === 'idle', eligible }) !== 'replay') return;
+  const cue = show.cues[attractIndex];
+  loadStateBefore(attractIndex, { quiet: true });
+  view.setPreset('FOH'); // every pass starts from the same view, then swings to the gap as it opens
+  setActiveCam('FOH');
+  log.info(`Booth loop: replaying Q${cue.id} ${cue.name}. Touch anywhere to take over.`);
+  toast(`Replaying Q${cue.id}: watch the clearance check catch it. Tap anywhere to take over.`);
+  go();
+}
+
 // ---------- Render loop ----------
 
 // Dev only: `?frames=timer` drives the loop from a timer, for automated checks in a hidden or
@@ -903,6 +935,7 @@ function frame(now) {
     }
     if (sim.state === 'idle') simAccumulator = 0;
   }
+  if (attract) boothTick(dt); // real time, not the 1x/2x/4x show speed
 
   // Draw at the exact frame time, not the last 10 ms step boundary (removes 1-2 / 0-1 step judder).
   // Clearance tracking above still runs on whole steps, so live and preflight results stay identical.
