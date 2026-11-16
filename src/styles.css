@@ -640,6 +640,22 @@ details summary { cursor: pointer; color: var(--legend); font-size: var(--t-body
   .panel-foot .cams { position: static; flex: 1 1 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
   .panel-foot .cams button { min-height: 44px; padding: 0; }
 }
+/* Booth-readable HUD on a phone held at arm's length (portrait only; short landscape keeps the one-line strip).
+   The strip becomes two rows: the state lamp and word with the cue time at the right, then the cue name at
+   State size across the full width, so "Q3 Revolve 90 + header in" is read whole instead of cut to a few
+   letters. The second row is always reserved, so the stage and the docked bar never shift when a cue
+   name appears or clears. The bus positions step up from Label to Body, the numbers a visitor watches. */
+@media (max-width: 820px) and (min-height: 521px) {
+  .hud {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'state time' 'cue cue';
+    grid-template-rows: auto calc(var(--t-state) * 1.2); column-gap: var(--sp-4); row-gap: 4px; align-items: center;
+  }
+  .hud-state { grid-area: state; }
+  .hud-cue { display: contents; } /* its cue and time become the strip's own grid cells (still hidden when empty) */
+  #hudCue { grid-area: cue; font: 600 var(--t-state)/1.2 var(--sans); letter-spacing: -.01em; white-space: nowrap; }
+  #hudTime { grid-area: time; justify-self: end; line-height: 1; }
+  .bus-pos { font-size: var(--t-body); font-weight: 600; }
+}
 @media (max-width: 420px) {
   .btn-go { min-height: 68px; }
   .btn-stop, .btn-reset { font-size: var(--t-title); letter-spacing: .02em; }

@@ -294,10 +294,10 @@ The 3D scene's own neutrals (pit floor, grid lines, deck, piece outlines, collis
 
 ### Hierarchy
 - **Display** (700, 36px, 0.04em; `--t-display`): the GO legend. Steps down to 22px (600) while GO is unlit, and to 22px in short landscape.
-- **State** (700, 22px, 1 line; `--t-state`): the HUD state word (Ready, Running, Conflict, Stopping, Stopped, Caught; -0.01em), STOP and RESET (0.04em; 17px at ≤420 px), and the live axis position on the Axes tab (600).
-- **Title** (600, 17px, 1.2; `--t-title`): cue names (clamped to two lines), the standby cue, axis names, the show name (700), the HUD cue and time (500), the gap label (700), the Caught card's heading, the Run/Rig switch, headings. Tabs use the same size, uppercase at 0.04em.
-- **Body** (400, 14px, 1.4; `--t-body`): sentences, hints, alerts, the caught card's detail line, log text, control text, and numbers in lists and readouts (500-600). Empty-state prose caps at 46ch.
-- **Label** (600, 12px, 0.02em; `--t-label`): field labels, hints, timestamps, meta lines, move-table headers, and the phone bus and docked bars.
+- **State** (700, 22px, 1 line; `--t-state`): the HUD state word (Ready, Running, Conflict, Stopping, Stopped, Caught; -0.01em), STOP and RESET (0.04em; 17px at ≤420 px), the live axis position on the Axes tab (600), and the HUD cue name on a phone in portrait (600, its own row).
+- **Title** (600, 17px, 1.2; `--t-title`): cue names (clamped to two lines), the standby cue, axis names, the show name (700), the HUD cue and time (500; on a phone the time only), the gap label (700), the Caught card's heading, the Run/Rig switch, headings. Tabs use the same size, uppercase at 0.04em.
+- **Body** (400, 14px, 1.4; `--t-body`): sentences, hints, alerts, the caught card's detail line, log text, control text, and numbers in lists and readouts (500-600), including the phone bus positions (600). Empty-state prose caps at 46ch.
+- **Label** (600, 12px, 0.02em; `--t-label`): field labels, hints, timestamps, meta lines, move-table headers, and the phone bus's codes and docked bars.
 - **Lamp word** (700, 12px, 0.04em): the short words under or beside lamps: STBY, RUN, CLASH, DONE, SKIP, PEND, MOVE, IN POS.
 - **Standby legend** (700, 12px, 0.1em, uppercase): the one engraved legend, "Standby", in amber.
 
@@ -316,7 +316,8 @@ The panel stacks top to bottom: show name and Run/Rig switch; the **transport de
 
 Responsive rules, as built:
 - **≤820 px (phone portrait):** single column. Stage on top, panel below capped at 58dvh with tabs capped at 30dvh. The show name, Run/Rig switch, key hints, Save and every other desktop-only control are hidden (Rig mode is laptop-only).
-  - **Bus cells are two lines:** the lamp with its word, then the axis's tape swatch, a short code and its position (LIFT, REV, FLY4: `axisCodes` in `src/ui/format.js`, or an optional `short` field on the axis). Every lamp keeps its word and every position stays visible at any phone width; the full name is read out to screen readers, not drawn.
+  - **Bus cells are two lines:** the lamp with its word, then the axis's tape swatch, a short code and its position (LIFT, REV, FLY4: `axisCodes` in `src/ui/format.js`, or an optional `short` field on the axis). Every lamp keeps its word and every position stays visible at any phone width; the full name is read out to screen readers, not drawn. Positions are Body (14px 600) so a visitor can read them at arm's length.
+  - **The HUD is two rows in portrait** (not in short landscape): the lamp and state word with the cue time at the right, then the cue name at State size (22px 600) across the full width, so a name like "Q3 Revolve 90 + header in" reads whole instead of being cut to a few letters. The second row is reserved even when no cue is shown, so the stage and the docked bar never shift.
   - **One docked bar** (`--dock-h: 44px`) sits directly under the bus, full width. The live conflict alert and, after the cue, the Caught card share this one slot, so the stage under it never changes size when one replaces the other; if both exist (a stopped cue) the live alert wins. The full sentence lives in the Log tab.
   - **The camera control moves off the stage** into the panel footer, a full-width row of four equal 44px buttons under the thumb. The stage keeps only the HUD, the bus and the docked bar over it.
   - Only the live cue (standby, running, conflict) keeps its description, so more cues fit above the footer.
@@ -367,7 +368,7 @@ A flat 10px disc in Unlit Lamp with a lighter rim at rest, filling with its stat
 **The Lamp-and-Word Rule.** A lamp never appears alone. State is never carried by colour only; the word is present at every breakpoint.
 
 ### HUD Strip (signature)
-The strip along the top of the stage is the state, so it changes its whole ground, not only its lamp: the state lamp and word, then a hairline rule, then the cue and its time (17px 500).
+The strip along the top of the stage is the state, so it changes its whole ground, not only its lamp: the state lamp and word, then a hairline rule, then the cue and its time (17px 500). On a phone in portrait it is two rows (see Layout): state word and time, then the cue name at 22px.
 - **Ready / running:** the quiet Stage Overlay ground with Panel White text.
 - **Conflict:** a solid Clash Red ground with Clash Ink text and a Clash Ink bottom rule; the lamp lights white with an ink ring. On actual contact the ground flashes to Clash Flash in two steps at 0.8s (not under reduced motion).
 - **Stopping / stopped:** a solid Standby Amber ground with Standby Ink text; the lamp lights white with an ink ring.
