@@ -2,6 +2,9 @@
 
 import { formatGap, formatClearance, clockTime, esc } from './format.js';
 
+// Oldest entries drop off past this, so a long session (a booth loop runs for hours) can't grow the DOM forever.
+export const LOG_MAX_ENTRIES = 200;
+
 export function createLog(el, countEl, { onJump, clearance = () => null }) {
   let conflictCount = 0;
   const entries = new Map(); // window object -> li
@@ -14,6 +17,11 @@ export function createLog(el, countEl, { onJump, clearance = () => null }) {
   function prepend(li) {
     el.querySelector('.empty')?.remove();
     el.prepend(li);
+    while (el.children.length > LOG_MAX_ENTRIES) {
+      const old = el.lastElementChild;
+      for (const [w, entry] of entries) if (entry === old) entries.delete(w);
+      old.remove();
+    }
   }
 
   function info(text) {
