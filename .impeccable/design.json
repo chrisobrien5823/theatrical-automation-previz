@@ -704,11 +704,11 @@
       },
       "state": {
         "displayName": "State",
-        "purpose": "HUD state word, STOP and RESET, live axis position, the unlit GO."
+        "purpose": "HUD state word, STOP and RESET, live axis position, the unlit GO, the HUD cue name on a phone in portrait."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Cue names, axis names, tabs, HUD cue and time, the gap label, headings."
+        "purpose": "Cue names, axis names, tabs, HUD cue and time (time only on a phone), the gap label, headings."
       },
       "body": {
         "displayName": "Body",
