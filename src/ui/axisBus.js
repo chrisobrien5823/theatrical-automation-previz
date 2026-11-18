@@ -10,7 +10,8 @@ import { writeText, writeData } from './domWrite.js';
 
 // "CLASH", never "CLR": on a stage crew's tongue CLR means clear, the opposite.
 // "IN POS" is an axis at rest where it was last sent; it says nothing about whether that is the next cue's target.
-const WORD = { moving: 'MOVE', clash: 'CLASH', idle: 'IN POS' };
+// "TRIP" is a drive that faulted (operator training): it holds the show until the fault is cleared.
+const WORD = { moving: 'MOVE', clash: 'CLASH', idle: 'IN POS', trip: 'TRIP' };
 
 export function createAxisBus(el) {
   let rows = new Map();
@@ -37,7 +38,7 @@ export function createAxisBus(el) {
     for (const s of states) {
       const r = rows.get(s.id);
       if (!r) continue;
-      const state = clashing.has(s.id) ? 'clash' : s.moving ? 'moving' : 'idle';
+      const state = clashing.has(s.id) ? 'clash' : s.fault === 'stall' ? 'trip' : s.moving ? 'moving' : 'idle';
       writeData(r.item, 'state', state);
       writeText(r.word, WORD[state]);
       writeText(r.pos, `${s.pos.toFixed(s.def.type === 'rotary' ? 1 : 2)} ${r.u.pos}`);
