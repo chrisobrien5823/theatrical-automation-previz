@@ -18,6 +18,7 @@ import { modelPositions } from './core/edit.js';
 import { sceneKey } from './core/sceneKey.js';
 import { QUALITY_LEVELS, createQualityGovernor, parseQualityParam } from './core/quality.js';
 import { createAttract, attractCueIndex, parseBoothParam } from './core/attract.js';
+import { pickDrill } from './core/drills.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
@@ -29,7 +30,7 @@ import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosa
 import { createCueList } from './ui/cuelist.js';
 import { createReadouts } from './ui/readouts.js';
 import { createLog } from './ui/log.js';
-import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './ui/format.js';
+import { formatGap, formatClearance, spokenGap, spokenClearance, esc, unitOf } from './ui/format.js';
 import { icon } from './ui/icons.js';
 import { createAxisBus } from './ui/axisBus.js';
 import { createTimeline } from './ui/timeline.js';
@@ -63,6 +64,8 @@ const ui = {
   caught: $('caught'),
   announce: $('announce'),
   speed: $('speed'),
+  drill: $('drill'),
+  faultBar: $('faultBar'),
   runPanel: $('runPanel'),
   rigPanel: $('rigPanel'),
 };
@@ -118,6 +121,9 @@ let halted = null; // cue that was STOPped mid-move; axes are parked short of it
 let preview = null; // { index, scrubber, t }: the timeline is scrubbing the standby cue (idle only); the stage shows that moment
 let caught = null; // { cueIndex, w }: the worst clearance conflict of the last cue, shown until the next GO / RESET
 let framedThisCue = false; // the camera swings to the first conflict of a cue, once
+let drillKind = ''; // operator training: '' (off), 'any', 'stall', 'overshoot' or 'estop'
+let faultSince = null; // performance.now() when the drill's fault tripped (for the response time)
+let faulted = null; // { cue, fault, since }: a drill fault is holding the show until it is cleared
 let speed = 1;
 let mode = 'run';
 let boxesVisible = true;
@@ -228,10 +234,7 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
     return false;
   }
 
-  if (keep && sim && sim.state !== 'idle') {
-    sim.stop();
-    while (sim.state !== 'idle') sim.step(SIM_STEP);
-  }
+  if (keep && sim) settleSim();
   const prevPositions = keep && sim ? sim.positions() : null;
   const prevIndex = keep && sim ? sim.cueIndex : 0;
 
@@ -274,6 +277,8 @@ function load(raw, source, { keep = false, quiet = false, standby } = {}) {
   stateBefore = chain.map((r, i) => (i === 0 ? home : chain[i - 1].endPositions));
   preflight = chain;
   attractIndex = attractCueIndex(chain);
+  faulted = null;
+  dealDrill(); // a new Simulator starts with nothing armed
 
   ui.showName.textContent = show.name;
   document.title = `${show.name} · Stage Previz`;
@@ -346,6 +351,7 @@ function loadStateBefore(i, { quiet = false } = {}) {
 /** Put a cue in standby from the cue list. Axes stay where they are; cues jumped over count as skipped. */
 function standbyCue(i) {
   if (!sim) return;
+  if (sim.state === 'faulted') return toast('The show is held by a fault. Clear it first.');
   if (sim.state !== 'idle') return toast('The cue list is locked while a cue runs. STOP first.');
   const from = sim.cueIndex;
   if (i === from || !sim.standby(i)) return;
@@ -441,7 +447,29 @@ function onSimEvent(ev) {
       log.info(`Axes at rest, short of Q${cue.id}'s targets. GO re-runs Q${cue.id} from here.`);
       refreshPreflightIdle();
       break;
+    case 'fault': {
+      const sentence = faultSentence(ev.fault, cue);
+      log.info(`FAULT: ${sentence}`);
+      announce(`Fault. ${sentence}`);
+      if (ev.fault.type === 'overshoot') toast(sentence); // a warning: the axis creeps back and the cue completes
+      else faultSince = performance.now();
+      break;
+    }
+    case 'faulted':
+      closeWindows();
+      faulted = { cue, fault: ev.fault, since: faultSince ?? performance.now() };
+      setCaught(cue);
+      log.info(`Show held in Q${cue.id}. Clear the fault, then GO re-runs Q${cue.id} from where the axes stopped.`);
+      refreshPreflightIdle();
+      break;
+    case 'faultCleared':
+      if (!faulted) break; // cleared by RESET or an edit (settleSim), not by the operator
+      log.info(`Fault cleared ${((performance.now() - faulted.since) / 1000).toFixed(1)} s after it tripped. GO re-runs Q${faulted.cue.id}.`);
+      halted = faulted.cue; // axes are short of its targets, like after a STOP
+      faulted = null;
+      break;
     case 'reset':
+      faulted = null;
       halted = null;
       caught = null;
       ran = new Set();
@@ -531,14 +559,65 @@ function stop() {
 }
 function reset() {
   if (!sim) return;
-  if (sim.state !== 'idle') {
-    sim.stop();
-    // Finish the ramp instantly so RESET always works, then home.
-    while (sim.state !== 'idle') sim.step(SIM_STEP);
-  }
+  settleSim(); // finish any ramp instantly so RESET always works, then home
   sim.reset();
+  dealDrill(); // a fresh surprise for the next run-through
   readouts.clearTraces();
 }
+
+/** A cue is in motion (running or ramping down). Not idle, and not held by a fault either. */
+function isLive() {
+  return sim.state === 'running' || sim.state === 'stopping';
+}
+
+/** Bring the sim to rest at once (RESET, edits): finish any ramp instantly and drop a fault hold. */
+function settleSim() {
+  if (sim.state === 'running') sim.stop();
+  while (isLive()) sim.step(SIM_STEP);
+  faulted = null; // not the operator's clear: no response time is logged
+  if (sim.state === 'faulted') sim.clearFault();
+}
+
+// ---------- Operator training: fault drills ----------
+
+/** Arm one random fault of the chosen kind for this run-through (src/core/drills.js), or none. */
+function dealDrill() {
+  const fault = drillKind ? pickDrill(show, { kind: drillKind, startPositions: stateBefore }) : null;
+  sim.armFaults(fault ? [fault] : []);
+  return fault;
+}
+
+function faultSentence(f, cue) {
+  const def = show.axes.find((a) => a.id === f.axis);
+  const name = def?.name ?? f.axis;
+  const at = f.at != null ? ` at ${f.at.toFixed(2)} s` : '';
+  if (f.type === 'stall') return `${name} drive tripped${at} in Q${cue.id}.`;
+  if (f.type === 'estop') return `E-stop opened${at} in Q${cue.id}: every axis braked.`;
+  const by = f.amount != null && def ? ` by ${f.amount.toFixed(def.type === 'rotary' ? 1 : 2)} ${unitOf(def).pos}` : '';
+  return `${name} overshot its target${by} in Q${cue.id} and crept back.`;
+}
+
+function clearFault() {
+  if (sim?.state === 'faulted') sim.clearFault();
+}
+
+let faultBarFor = null;
+function renderFaultBar() {
+  if (faulted === faultBarFor) return;
+  faultBarFor = faulted;
+  ui.faultBar.hidden = !faulted;
+  if (!faulted) return ui.faultBar.replaceChildren();
+  ui.faultBar.innerHTML = `<p><b>Show held.</b> ${esc(faultSentence(faulted.fault, faulted.cue))}</p><button type="button" class="btn-small primary">Clear fault</button>`;
+  ui.faultBar.querySelector('button').addEventListener('click', clearFault);
+}
+
+ui.drill.addEventListener('change', () => {
+  drillKind = ui.drill.value;
+  if (!sim) return;
+  dealDrill();
+  const label = ui.drill.selectedOptions[0].textContent.toLowerCase();
+  log.info(drillKind ? `Fault drills on (${label}): one surprise fault lands mid-move somewhere in the show. RESET deals a new one.` : 'Fault drills off.');
+});
 
 ui.go.addEventListener('click', go);
 ui.stop.addEventListener('click', stop);
@@ -703,11 +782,11 @@ const setText = writeText;
 const setLamp = (el, state) => writeData(el, 'state', state);
 
 function refreshUi() {
-  const running = sim.state !== 'idle';
+  const running = isLive();
   // While a cue runs, standby shows the one after it (what the next GO will take once this completes).
   const nextIndex = sim.state === 'running' ? sim.cueIndex + 1 : sim.cueIndex;
   const next = show.cues[nextIndex];
-  ui.go.disabled = running || !sim.nextCue;
+  ui.go.disabled = running || sim.state === 'faulted' || !sim.nextCue;
   ui.stop.disabled = sim.state !== 'running';
   const flagged = next && preflight[nextIndex]?.conflicts.length;
   ui.standby.innerHTML = next ? `<span class="tnum">Q${esc(next.id)}</span> ${esc(next.name)}` + (flagged ? ` ${icon('warn', 'preflight conflict')}` : '') : 'End of list';
@@ -720,7 +799,7 @@ function refreshUi() {
     : skipped && !running
       ? 'Cues were skipped, so the stage is not where the show expects. Preflight runs from the current positions.'
       : '';
-  ui.standbyNote.hidden = !note;
+  ui.standbyNote.hidden = !note || !!faulted; // the fault bar says it while the show is held
   setText(ui.standbyNote, note);
 
   cueList.setState({
@@ -731,6 +810,7 @@ function refreshUi() {
     conflict: running && hits.length > 0,
   });
   renderCaught();
+  renderFaultBar();
   syncTimeline();
 }
 
@@ -758,7 +838,7 @@ function endPreview() {
 
 function syncTimeline() {
   if (!sim) return;
-  const live = sim.state !== 'idle';
+  const live = isLive();
   const index = live ? show.cues.indexOf(sim.activeCue) : sim.cueIndex;
   const cue = show.cues[index] ?? null;
   const result = preflight?.[index] ?? null;
@@ -804,7 +884,7 @@ function renderCaught() {
 let alertKey = '';
 let hudContactShown = false;
 function refreshHud(worst) {
-  const running = sim.state !== 'idle';
+  const running = isLive();
   // The strip itself changes ground with the state (see .hud[data-state] in styles.css): solid red for a
   // live clearance conflict, solid amber for a ramped STOP / halted cue, a red-ruled "Caught" rest after.
   let word;
@@ -815,6 +895,7 @@ function refreshHud(worst) {
   // The pieces, the gap dimension and the timeline still show any conflict at that moment.
   if (previewing) [word, lamp, hudState] = ['Preview', 'off', 'ready'];
   else if (hits.length) [word, lamp, hudState] = ['Conflict', 'clash', 'clash'];
+  else if (sim.fault) [word, lamp, hudState] = ['Fault', 'standby', 'stopped']; // a drill fault: held, waiting on the operator (amber)
   else if (sim.state === 'stopping') [word, lamp, hudState] = ['Stopping', 'standby', 'stopped']; // amber = held, not a clearance problem
   else if (running) [word, lamp, hudState] = ['Running', 'moving', 'running'];
   else if (caught) [word, lamp, hudState] = ['Caught', 'clash', 'caught']; // rests here until the Caught card is dismissed / next GO / RESET
@@ -838,7 +919,7 @@ function refreshHud(worst) {
     setText(ui.hudTime, `${preview.t.toFixed(2)} / ${preview.scrubber.duration.toFixed(2)} s`);
   } else {
     // The next cue is the panel's Standby row; the HUD only says something the panel does not.
-    const rest = caught ? `Q${show.cues[caught.cueIndex].id}${halted ? ' not at target' : ''}` : halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet';
+    const rest = faulted ? `Q${faulted.cue.id} held` : caught ? `Q${show.cues[caught.cueIndex].id}${halted ? ' not at target' : ''}` : halted ? `Q${halted.id} not at target` : show.cues.length ? '' : 'No cues yet';
     setText(ui.hudCue, rest);
     setText(ui.hudTime, '');
   }
@@ -920,20 +1001,20 @@ function frame(now) {
   last = now;
   elapsed += dt;
 
-  if (sim.state !== 'idle') {
+  if (isLive()) {
     simAccumulator += dt * speed;
     showClock += dt * speed;
-    while (simAccumulator >= SIM_STEP && sim.state !== 'idle') {
+    while (simAccumulator >= SIM_STEP && isLive()) {
       const cue = sim.activeCue;
       sim.step(SIM_STEP);
       simAccumulator -= SIM_STEP;
       // Check every 10 ms sim step (not just every frame) so fast transients are not missed.
       // Skip the step that finished the cue: its windows were already closed by the cueComplete event.
-      if (sim.state !== 'idle' && sim.activeCue === cue) {
+      if (isLive() && sim.activeCue === cue) {
         trackHits(checkClearance(show, sim.positions(), pairs), cue, sim.cueTime);
       }
     }
-    if (sim.state === 'idle') simAccumulator = 0;
+    if (!isLive()) simAccumulator = 0; // idle, or held by a fault
   }
   if (attract) boothTick(dt); // real time, not the 1x/2x/4x show speed
 
