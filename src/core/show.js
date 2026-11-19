@@ -1,6 +1,8 @@
 // Load + validate a show file (axes, pieces, cues). Returns a normalized copy plus warnings.
 // Throws on errors that would make the show unrunnable (missing ids, bad references).
 
+import { TC_RATES, getRate, parseTimecode, formatTimecode } from './timecode.js';
+
 const DEFAULT_CLEARANCE = 0.15;
 
 /**
@@ -114,6 +116,14 @@ export function loadShow(raw) {
     return [pair[0], pair[1]];
   });
 
+  // Optional timecode: show-level { "rate": "25" }, then a cue may carry "tc": "00:01:12:00".
+  let timecode = null;
+  if (raw.timecode != null) {
+    const rateId = String(raw.timecode.rate ?? '');
+    if (!Object.hasOwn(TC_RATES, rateId)) errors.push(`timecode.rate must be one of ${Object.keys(TC_RATES).join(', ')}`);
+    else timecode = { rate: rateId };
+  }
+
   const cueIds = new Set();
   const cues = (raw.cues ?? []).map((c, i) => {
     const id = String(c.id ?? i + 1);
@@ -139,14 +149,24 @@ export function loadShow(raw) {
       }
       return { axis: m.axis, target, delay: Math.max(0, m.delay ?? 0), vMax };
     });
+    let tc = null;
+    if (c.tc != null && c.tc !== '') {
+      if (raw.timecode == null) errors.push(`cue ${id}: has tc "${c.tc}" but the show has no timecode rate`);
+      else if (timecode) {
+        tc = parseTimecode(c.tc, getRate(timecode.rate));
+        if (tc === null) errors.push(`cue ${id}: tc "${c.tc}" is not a valid ${timecode.rate} fps timecode`);
+      }
+    }
     return {
       id,
       name: c.name ?? `Cue ${id}`,
       note: c.note ?? '',
       moves,
       follow: c.follow ?? false,
+      tc,
     };
   });
+  if (timecode) timecodeWarnings(cues, getRate(timecode.rate), warnings);
 
   let model = null;
   if (raw.model) {
@@ -172,10 +192,23 @@ export function loadShow(raw) {
       axes,
       pieces,
       ignorePairs,
+      timecode,
       cues,
     },
     warnings,
   };
+}
+
+// Timecode cues run in cue-list order: the Simulator only GOes the standby cue.
+function timecodeWarnings(cues, rate, warnings) {
+  let last = null;
+  cues.forEach((c, i) => {
+    if (c.tc == null) return;
+    if (last && c.tc <= last.tc) warnings.push(`cue ${c.id}: tc ${formatTimecode(c.tc, rate)} is not after cue ${last.id} (${formatTimecode(last.tc, rate)})`);
+    last = c;
+    const prev = cues[i - 1];
+    if (prev?.follow) warnings.push(`cue ${c.id}: has a tc but cue ${prev.id} auto-follows into it; it will start when cue ${prev.id} ends`);
+  });
 }
 
 function vec3(v, fallback = [0, 0, 0]) {
