@@ -19,6 +19,23 @@ npm run build:single   # dist-single/ one self-contained index.html for USB / fi
 - Camera presets: FOH, SL, SR, Top. Speed 1×/2×/4×.
 - **Load show…** (or drag a `.json` onto the stage) to run your own show file.
 
+## OSC input (QLab and other show control)
+A web page can't listen on UDP, so a small Node bridge (no npm packages) passes OSC to the page:
+1. `node scripts/osc-bridge.mjs` (OSC in on UDP 53100, pages connect on `ws://127.0.0.1:53180`;
+   `--udp`, `--ws` and `--ws-host 0.0.0.0` change that).
+2. Open the app with `?osc` (or `?osc=9000`, or `?osc=ws://192.168.1.20:53180` for a bridge on another machine).
+3. In QLab, add a network destination at the bridge computer's IP, port 53100, and use Network cues:
+
+| OSC message | Does |
+|---|---|
+| `/previz/go` | GO the standby cue |
+| `/previz/go 3` or `/previz/cue/3/go` | standby Q3, then GO |
+| `/previz/standby 3` or `/previz/cue/3/standby` | standby Q3 |
+| `/previz/stop` · `/previz/reset` | STOP (ramped) · RESET |
+
+Run mode only, like the keyboard. A lone float 1.0 / 0.0 (a TouchOSC button's press / release) is a
+press / ignored, not a cue number. Test without QLab: `node scripts/osc-bridge.mjs --send /previz/go 3`.
+
 ## Importing a set model (Rig mode, laptop)
 1. **Open…** (or drag onto the stage) a `.glb`, `.fbx` or `.obj`, or a `.gltf` together with its
    `.bin` and textures. From Vectorworks, **File → Export → FBX** works directly.
