@@ -18,6 +18,7 @@ import { modelPositions } from './core/edit.js';
 import { sceneKey } from './core/sceneKey.js';
 import { QUALITY_LEVELS, createQualityGovernor, parseQualityParam } from './core/quality.js';
 import { createAttract, attractCueIndex, parseBoothParam } from './core/attract.js';
+import { decodeOsc, oscMessages, oscCommand, parseOscParam } from './core/osc.js';
 import { createScene, CAMERA_PRESETS } from './render/scene.js';
 import { createPieces } from './render/pieces.js';
 import { createPicking } from './render/picking.js';
@@ -28,6 +29,7 @@ import { readModelFiles, isModelFile } from './model/import.js';
 import { saveProject, loadProject, download, autosave, loadAutosave, clearAutosave, exportGlb } from './model/project.js';
 import { createCueList } from './ui/cuelist.js';
 import { createReadouts } from './ui/readouts.js';
+import { connectOsc } from './ui/oscLink.js';
 import { createLog } from './ui/log.js';
 import { formatGap, formatClearance, spokenGap, spokenClearance, esc } from './ui/format.js';
 import { icon } from './ui/icons.js';
@@ -870,13 +872,61 @@ function refreshHud(worst) {
 // (a tap on GO resets, then runs Q1). The timing logic lives in src/core/attract.js.
 const boothDelay = parseBoothParam(new URLSearchParams(location.search).get('booth'));
 const attract = boothDelay == null ? null : createAttract({ idleDelay: boothDelay });
+// Any operator input, local or over OSC, restarts the idle count; during a replay it also hands
+// the stage back, reset to Q1.
+function boothTakeOver() {
+  if (!attract?.poke()) return; // off, or not looping: the poke just restarted the idle count
+  reset();
+  toast(`Your turn. The show is back at Q${show.cues[0]?.id ?? '1'}.`);
+}
 if (attract) {
-  const takeOver = () => {
-    if (!attract.poke()) return; // not looping: the poke just restarted the idle count
-    reset();
-    toast(`Your turn. The show is back at Q${show.cues[0]?.id ?? '1'}.`);
-  };
-  for (const type of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(type, takeOver, { capture: true, passive: true });
+  for (const type of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(type, boothTakeOver, { capture: true, passive: true });
+}
+
+// ---------- OSC input ----------
+
+// `?osc` (or `?osc=9000`, `?osc=ws://192.168.1.20:53180`): take GO / STOP / RESET / standby from
+// QLab or any OSC sender, through scripts/osc-bridge.mjs (a page can't listen on UDP itself).
+// Packets are decoded and mapped to commands in src/core/osc.js; this only applies them, with the
+// same rules as the keyboard: Run mode only, and not while a dialog is open.
+const oscUrl = parseOscParam(new URLSearchParams(location.search).get('osc'), location.hostname || 'localhost');
+if (oscUrl) {
+  connectOsc(oscUrl, {
+    onStatus: (status, detail) => {
+      if (status === 'open') log.info(`OSC: connected to the bridge at ${oscUrl}. Send /previz/go, /previz/stop or /previz/reset.`);
+      else if (status === 'closed') log.info('OSC: bridge disconnected. Retrying…');
+      else log.info(`OSC: can't connect to ${oscUrl} (${detail}).`);
+    },
+    onPacket: (bytes) => {
+      let messages;
+      try {
+        messages = oscMessages(decodeOsc(bytes));
+      } catch (err) {
+        return log.info(`OSC: dropped a bad packet (${err.message}).`);
+      }
+      for (const msg of messages) applyOsc(msg);
+    },
+  });
+}
+
+function applyOsc(msg) {
+  if (!sim) return;
+  const cmd = oscCommand(msg, show);
+  if (cmd.type === 'ignore') return;
+  if (cmd.error) return log.info(`OSC: ${cmd.error}.`);
+  if (mode !== 'run' || document.querySelector('.modal-wrap')) {
+    return log.info(`OSC: ${msg.address} ignored (${mode !== 'run' ? 'Rig mode' : 'a dialog is open'}).`);
+  }
+  boothTakeOver();
+  // One log line names the source; GO / STOP then log as they do from the desk.
+  log.info(`OSC: ${[msg.address, ...msg.args].join(' ')}`);
+  if (cmd.type === 'stop') return stop();
+  if (cmd.type === 'reset') return reset();
+  if (cmd.cueIndex != null && cmd.cueIndex !== sim.cueIndex) {
+    if (sim.state !== 'idle') return log.info(`OSC: Q${show.cues[cmd.cueIndex].id} ignored while a cue runs.`);
+    standbyCue(cmd.cueIndex);
+  }
+  if (cmd.type === 'go') go();
 }
 
 function boothTick(dt) {
