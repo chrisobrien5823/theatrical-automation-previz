@@ -14,18 +14,32 @@ function* sweepCue(show, positions, cueIndex, { dt = PREFLIGHT_DT, pairs = build
   const sim = new Simulator(show, { positions, cueIndex });
   const cue = show.cues[cueIndex];
   const tracker = new ConflictTracker();
-  if (!sim.go()) return { cueId: cue?.id ?? null, duration: 0, endPositions: positions, conflicts: [] };
+  // The cue ends at its own cueComplete, not when the sim next goes idle: an auto-follow cue's
+  // completion calls go() on the next cue inside the same step(), so the sim never rests between
+  // them. Capture the end here, before the follow cue resets cueTime, the same moment live playback
+  // closes this cue's windows and starts a fresh tracker for the next one.
+  let end = null;
+  const off = sim.on((ev) => {
+    if (ev.type === 'cueComplete' && ev.cue === cue) end = { duration: ev.cueTime, positions: sim.positions() };
+  });
+  if (!sim.go()) {
+    off();
+    return { cueId: cue?.id ?? null, duration: 0, endPositions: positions, conflicts: [] };
+  }
 
   tracker.update(checkClearance(show, sim.positions(), pairs), cue.id, 0);
   let steps = 0;
-  while (sim.state !== 'idle' && steps * dt < MAX_CUE_SECONDS) {
+  while (!end && sim.state !== 'idle' && steps * dt < MAX_CUE_SECONDS) {
     sim.step(dt);
     steps++;
-    tracker.update(checkClearance(show, sim.positions(), pairs), cue.id, sim.cueTime);
+    const pose = end ? end.positions : sim.positions();
+    tracker.update(checkClearance(show, pose, pairs), cue.id, end ? end.duration : sim.cueTime);
     yield;
   }
+  off();
   tracker.flush();
-  return { cueId: cue.id, duration: sim.cueTime, endPositions: sim.positions(), conflicts: tracker.closed };
+  if (!end) end = { duration: sim.cueTime, positions: sim.positions() }; // runaway cue, capped
+  return { cueId: cue.id, duration: end.duration, endPositions: end.positions, conflicts: tracker.closed };
 }
 
 function* sweepShow(show, positions, fromIndex, opts) {

@@ -29,17 +29,19 @@ export function createCueScrubber(show, positions, cueIndex, { dt = PREFLIGHT_DT
     end = null;
     // Capture the end pose at the moment the cue completes, before a follow cue could start moving.
     sim.on((ev) => {
-      if (ev.type === 'cueComplete' && ev.cue === cue) end = { positions: sim.positions(), states: sim.axisStates() };
+      if (ev.type === 'cueComplete' && ev.cue === cue) end = { time: ev.cueTime, positions: sim.positions(), states: sim.axisStates() };
     });
     sim.go();
-    if (sim.state === 'idle' && !end) end = { positions: sim.positions(), states: sim.axisStates() };
+    if (sim.state === 'idle' && !end) end = { time: sim.cueTime, positions: sim.positions(), states: sim.axisStates() };
   }
 
   // Run once to find the length (whole steps, like preflight's duration), then rewind.
   restart();
   while (!end && sim.cueTime < MAX_CUE_SECONDS) sim.step(dt);
-  if (!end) end = { positions: sim.positions(), states: sim.axisStates() }; // runaway cue: cap it like preflight
-  const duration = sim.cueTime;
+  if (!end) end = { time: sim.cueTime, positions: sim.positions(), states: sim.axisStates() }; // runaway cue: cap it like preflight
+  // From the cueComplete event, not sim.cueTime: an auto-follow cue has already started the next cue
+  // (and reset cueTime to 0) by the time step() returns.
+  const duration = end.time;
   restart();
 
   /** Step the private sim up to the last whole step at or before t; return the leftover. */
